@@ -1,6 +1,6 @@
 # Build Status
 
-Last updated: 2026-11-09. Phase 2 is on `main`; Phases 2 and 3 are merged; Phase 4 is on branch `phase4-execution`.
+Last updated: 2026-11-09. Phase 2 is on `main`; Phases 2 and 3 are merged; Phase 5 is on branch `phase5-evidence`.
 
 ## Phase report
 
@@ -52,14 +52,22 @@ Not done: a persistent store (registry is in memory); approval-required paths be
 - Mandatory tests 18–20 pass. Test results: 98 passed.
 - Not done: durable attempt log, real connectors (payments, refunds, ERP, CRM, generic HTTP), evidence records (Phase 5).
 
-### Phases 5–11: NOT STARTED
+### Phase 5: Evidence and ledger (implemented and tested)
+
+- Evidence envelope keeps authorization and execution in separate sections. Execution may appear only with ALLOW, or as a refusal. Invariants are enforced before signing and during verification.
+- Ledger is append-only in code: entries are stored as canonical signed lines, hash-chained, with contiguous sequence numbers and unique evidence IDs.
+- `verifyChain` takes exported lines and trust roots, and needs nothing from the writing ledger. It detects tampering, deletion, reordering, duplicate IDs, unknown keys, malformed lines, and (given an anchored head) tail truncation.
+- Mandatory cryptographic tests from the master list are covered: invalid signatures, wrong keys, unknown keys, modified evidence, broken chain, duplicate sequence, missing records. Not covered: key rotation and revoked-key ledger behaviour beyond the signature check.
+- Limitations: storage is in memory. Tail truncation is undetectable without an external head anchor, and the ledger does not provide one. PostgreSQL append-only enforcement is not built.
+
+### Phases 6–11: NOT STARTED
 
 Approval workflow, execution control, evidence, ledger, independent verifier, SDK, CLI, REST API, connectors, conformance suite, adversarial tests, deployment and release audit are not started.
 
 ## Commands and results (local)
 
 - `pnpm check` (build, typecheck, ESLint, Prettier, Vitest): exit 0.
-- Tests: 98 passed (all packages).
+- Tests: 113 passed (all packages).
 
 ## Known limitations
 

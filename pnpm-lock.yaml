@@ -70,7 +70,14 @@ importers:
 
   packages/crypto: {}
 
-  packages/evidence: {}
+  packages/evidence:
+    dependencies:
+      "@dip/authority":
+        specifier: workspace:*
+        version: link:../authority
+      "@dip/crypto":
+        specifier: workspace:*
+        version: link:../crypto
 
   packages/execution:
     dependencies:
@@ -87,7 +94,26 @@ importers:
         specifier: workspace:*
         version: link:../crypto
 
-  packages/ledger: {}
+  packages/ledger:
+    dependencies:
+      "@dip/approval":
+        specifier: workspace:*
+        version: link:../approval
+      "@dip/authority":
+        specifier: workspace:*
+        version: link:../authority
+      "@dip/authorization":
+        specifier: workspace:*
+        version: link:../authorization
+      "@dip/crypto":
+        specifier: workspace:*
+        version: link:../crypto
+      "@dip/evidence":
+        specifier: workspace:*
+        version: link:../evidence
+      "@dip/execution":
+        specifier: workspace:*
+        version: link:../execution
 
   packages/sdk: {}
 
