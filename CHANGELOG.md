@@ -61,6 +61,9 @@
 - Retention policy draft: evidence is kept indefinitely. Periods and personal-data points need owner and counsel decisions.
 - Specification documents 1 to 21, drafted to match the implementation. Canonical encoding is renumbered from section 3 to section 5.
 
+- Open-source documentation: rewritten README, documentation index, quick start, installation, SDK guide, integration guide, verification guide, connector guide and troubleshooting. Contributing and security policies updated. A minimal SDK example (`examples/sdk-quickstart.mjs`) is verified by running it.
+- Restored `docs/RELEASE-AUDIT.md` (it had not reached `main`) and added a status update after the audit.
+
 ### Notes
 
 - No approval workflow, execution boundary, evidence, ledger, verifier, SDK, CLI, API or connectors yet.
