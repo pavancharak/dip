@@ -51,7 +51,7 @@ Statuses: NOT_STARTED, IN_PROGRESS, IMPLEMENTED, VERIFIED, BLOCKED. IMPLEMENTED 
 | G-02 | Pluggable key management and KMS adapter | master §5.9 | none (keys are passed in as objects or files) | none | NOT_STARTED |
 | G-03 | node-postgres adapter tested against a real PostgreSQL server | master §12 | packages/storage/src/pg.ts (fromPgPool, openPostgres) | packages/storage/test/pg.test.ts (runs only when DIP_TEST_PG_URL is set; CI job `postgres` uses a postgres:16 service) | IMPLEMENTED: the adapter and test exist; the CI job has not yet run. Locally only the statements were checked, against a PGlite socket server, which hangs on errors inside transactions and so cannot verify the rollback path. |
 | G-04 | Backup and restore tooling with ledger-head verification | master §12 | none (manual procedure in infrastructure/postgres/README.md) | none | NOT_STARTED |
-| G-05 | Retention policy | master §12 | none | none | NOT_STARTED |
+| G-05 | Retention policy | master §12 | docs/RETENTION.md (draft); no retention configuration (append-only by design) | none (policy is documentation; enforcement is append-only triggers and the chain check) | IMPLEMENTED as a draft: periods and personal-data points need owner and counsel decisions |
 | G-06 | Independent implementation run against the conformance fixtures | master §14 | conformance/ fixtures exist | none | NOT_STARTED |
 | G-07 | External security review | master §19 | docs/RELEASE-AUDIT.md (internal) | none | NOT_STARTED |
 | G-08 | Patent-risk review of approval and evidence designs (ADR-0014) | Parmana DECISIONS §2.3 | none | none | NOT_STARTED |
