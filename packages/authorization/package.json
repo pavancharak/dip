@@ -13,6 +13,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@dip/approval": "workspace:*",
     "@dip/authority": "workspace:*",
     "@dip/crypto": "workspace:*"
   }

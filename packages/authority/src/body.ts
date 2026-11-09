@@ -38,6 +38,8 @@ export interface AuthorityBody {
   /** Amounts strictly above this need approval. Null disables amount-based approval. */
   readonly approvalAboveMinor: number | null;
   readonly approvalActions: string[];
+  /** Approver signing keys allowed to approve this authority's requests. */
+  readonly approverKeyIds: string[];
   readonly validFrom: string;
   readonly validUntil: string;
   readonly delegatedFrom: DelegationRef | null;
@@ -63,6 +65,7 @@ const BODY_KEYS = [
   "currencies",
   "approvalAboveMinor",
   "approvalActions",
+  "approverKeyIds",
   "validFrom",
   "validUntil",
   "delegatedFrom",
@@ -129,6 +132,7 @@ export function parseAuthorityBody(input: unknown): AuthorityBody {
         ? null
         : int(o.approvalAboveMinor, "authority.approvalAboveMinor", 0, MAX_MINOR_UNITS),
     approvalActions: list(o.approvalActions, "authority.approvalActions", id),
+    approverKeyIds: list(o.approverKeyIds, "authority.approverKeyIds", id),
     validFrom,
     validUntil,
     delegatedFrom,
