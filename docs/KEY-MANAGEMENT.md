@@ -1,6 +1,22 @@
 # Key Management Plan
 
-Status: **plan, with the first implementation step built.** The signing interface and a local provider exist and are tested. The cloud KMS adapter is not built. It needs an AWS account (or another provider's), sandbox access, and the decisions in section 8.
+Status: **adapter built, and sandbox checks run against real AWS KMS** (see section 10). The signing interface, a local provider, and `AwsKmsSigningProvider` (`packages/kms`) exist and are tested. The sandbox run confirmed the signing parameters and the `GetPublicKey` format. Section 7 items not yet run: the access-denied drill and the rotation procedure from section 5 as a documented runbook.
+
+## 10. Sandbox results (AWS account, us-east-1)
+
+Run with an IAM user limited to KMS on keys tagged `project=dip-sandbox`.
+
+| Check                                                          | Result                                                                                                  |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Create `ECC_NIST_EDWARDS25519` / `SIGN_VERIFY` key             | Passed. Signing algorithms offered: `ED25519_SHA_512`, `ED25519_PH_SHA_512`                             |
+| `GetPublicKey` format                                          | Passed. DER SubjectPublicKeyInfo, 44 bytes, Ed25519 OID. Confirms the adapter assumption                |
+| Sign a DIP domain-separated message (`RAW`, `ED25519_SHA_512`) | Passed. 64-byte signature                                                                               |
+| Protocol verifier accepts the real KMS signature               | Passed. A tampered canonical body is rejected                                                           |
+| Revocation: sign after `DisableKey`                            | Passed. Refused with `DisabledException`. The adapter maps this to `KMS_SIGN_FAILED` (unit-tested)      |
+| Rotation: new key, old and new public keys differ              | Passed. Each key signs independently                                                                    |
+| Cleanup                                                        | Both test keys scheduled for deletion after a 30-day window (the maximum), so the sandbox can be re-run |
+
+Not run: the denied-`kms:Sign` drill against Parmana's own key. That needs a key outside the sandbox tag, and the engine refusal behavior from section 7 item 4 still needs an end-to-end test.
 
 ## 1. Why this matters
 

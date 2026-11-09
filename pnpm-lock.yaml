@@ -197,6 +197,12 @@ importers:
         specifier: workspace:*
         version: link:../crypto
 
+  packages/kms:
+    dependencies:
+      "@dip/crypto":
+        specifier: workspace:*
+        version: link:../crypto
+
   packages/ledger:
     dependencies:
       "@dip/approval":
