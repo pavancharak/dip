@@ -38,7 +38,12 @@ All packages are marked `private` and are not on npm. Use them from the reposito
    ```
 5. Check it is up: `curl localhost:3000/v1/health`.
 
-Set `storage.dataDir` to keep state across restarts. Without it, state is in memory and a restart discards it. The server refuses to start if the stored evidence chain does not verify.
+Keep state across restarts with one of two settings. Without either, state is in memory and a restart discards it.
+
+- `storage.postgresUrlPath`: a secret file containing a `postgres://` connection string. The server uses PostgreSQL, applies its schema on start, and writes every change before answering. The connection string is never written to logs or error messages.
+- `storage.dataDir`: a local directory for the embedded file-backed database. Use this for a single host with no PostgreSQL.
+
+Set one or the other, not both. The server refuses to start if the stored evidence chain does not verify. If a write cannot be persisted, the server stops rather than answer from state the log no longer matches.
 
 ## Docker
 

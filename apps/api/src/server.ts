@@ -3,7 +3,13 @@ import { createApi } from "./app.js";
 import { loadConfig, ConfigError } from "./config.js";
 import { createHttpServer } from "./http.js";
 import { DipClient } from "@dip/sdk";
-import { PostgresEventLog, migrate, openDatabase } from "@dip/storage";
+import {
+  PostgresEventLog,
+  migrate,
+  openDatabase,
+  openPostgres,
+  type SqlDatabase,
+} from "@dip/storage";
 
 /**
  * Entry point. Reads DIP_CONFIG (default /run/secrets/dip-config.json).
@@ -25,7 +31,10 @@ async function main(): Promise<void> {
     return;
   }
 
-  const db = config.dataDir === null ? null : await openDatabase(config.dataDir);
+  // PostgreSQL when configured; otherwise the file-backed database; otherwise memory only.
+  let db: SqlDatabase | null = null;
+  if (config.postgresUrl !== null) db = openPostgres(config.postgresUrl);
+  else if (config.dataDir !== null) db = await openDatabase(config.dataDir);
   if (db !== null) await migrate(db);
   const client = await DipClient.open({
     trustRoots: config.trustRoots,
@@ -42,11 +51,20 @@ async function main(): Promise<void> {
     principals: config.principals,
     rateLimit: config.rateLimit,
     clockMs: () => Date.now(),
+    onPersistenceFailure: (err) => {
+      // A response is never sent for a change that was not written. Stop rather than
+      // keep serving from state that the durable log no longer matches.
+      const message = err instanceof Error ? err.message : "unknown error";
+      process.stderr.write(`dip-api: persistence failed, stopping: ${message}\n`);
+      process.exit(1);
+    },
   });
   const server = createHttpServer((req) => api.handle(req));
   server.listen(config.port, () => {
     process.stdout.write(`dip-api listening on ${String(config.port)}\n`);
-    if (config.dataDir === null) {
+    if (config.postgresUrl !== null) {
+      process.stdout.write("state is durable in PostgreSQL\n");
+    } else if (config.dataDir === null) {
       process.stdout.write(
         "warning: state is held in memory; a restart discards authorities, approvals and evidence\n",
       );
@@ -58,7 +76,10 @@ async function main(): Promise<void> {
     );
   });
   const shutdown = (): void => {
-    server.close(() => process.exit(0));
+    server.close(() => {
+      const done = db?.close ? db.close() : Promise.resolve();
+      void done.finally(() => process.exit(0));
+    });
   };
   process.on("SIGTERM", shutdown);
   process.on("SIGINT", shutdown);

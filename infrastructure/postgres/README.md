@@ -30,4 +30,4 @@ Triggers stop ordinary application mistakes and accidental edits. A database own
 
 ## Drivers
 
-The stores depend only on the small `SqlDatabase` interface in `packages/storage/src/db.ts`. The server and tests use PGlite, which runs PostgreSQL 16 in-process and can keep its data in a directory. A `node-postgres` adapter (`fromPgPool`, `openPostgres` in `packages/storage/src/pg.ts`) exists. Its test runs against any PostgreSQL 14+ server named in `DIP_TEST_PG_URL`; CI runs it against a postgres:16 service container. Until that CI job passes, treat the adapter as unverified.
+The stores depend only on the small `SqlDatabase` interface in `packages/storage/src/db.ts`. The server runs on a real PostgreSQL server when `storage.postgresUrlPath` is set. It uses the `node-postgres` adapter (`openPostgres` in `packages/storage/src/pg.ts`). Without it, the server uses PGlite, an in-process PostgreSQL 16 that keeps its data in `storage.dataDir`. The adapter and the server restart test run against any PostgreSQL 14+ server named in `DIP_TEST_PG_URL`; CI runs them against a postgres:16 service container.
