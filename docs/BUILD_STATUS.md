@@ -1,6 +1,6 @@
 # Build Status
 
-Last updated: 2026-11-09. Phase 2 is on `main`; Phase 3 is on branch `phase3-approval`.
+Last updated: 2026-11-09. Phase 2 is on `main`; Phases 2 and 3 are merged; Phase 4 is on branch `phase4-execution`.
 
 ## Phase report
 
@@ -44,14 +44,22 @@ Not done: a persistent store (registry is in memory); approval-required paths be
 - Mandatory tests 11–17 pass. Test results: 79 passed (79).
 - Not done: persistence, approver groups, approval requests over an API.
 
-### Phases 4–11: NOT STARTED
+### Phase 4: Execution control (implemented and tested)
+
+- `ExecutionBoundary` is the only path to a connector. It refuses unless the decision is signed by a trusted, non-revoked engine key, its result is ALLOW, and it matches the exact request digest, authority version and policy version.
+- Freshness window, approval recheck at execution time, single-use decisions (replay refused), and idempotency per key (completed actions are returned, not repeated; key reuse with different content is a conflict).
+- Every attempt is recorded in order, including refusals. Connector failure, exception and timeout are recorded as FAILED or TIMED_OUT, never as success.
+- Mandatory tests 18–20 pass. Test results: 98 passed.
+- Not done: durable attempt log, real connectors (payments, refunds, ERP, CRM, generic HTTP), evidence records (Phase 5).
+
+### Phases 5–11: NOT STARTED
 
 Approval workflow, execution control, evidence, ledger, independent verifier, SDK, CLI, REST API, connectors, conformance suite, adversarial tests, deployment and release audit are not started.
 
 ## Commands and results (local)
 
 - `pnpm check` (build, typecheck, ESLint, Prettier, Vitest): exit 0.
-- Tests: 79 passed (all packages).
+- Tests: 98 passed (all packages).
 
 ## Known limitations
 

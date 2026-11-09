@@ -72,7 +72,20 @@ importers:
 
   packages/evidence: {}
 
-  packages/execution: {}
+  packages/execution:
+    dependencies:
+      "@dip/approval":
+        specifier: workspace:*
+        version: link:../approval
+      "@dip/authority":
+        specifier: workspace:*
+        version: link:../authority
+      "@dip/authorization":
+        specifier: workspace:*
+        version: link:../authorization
+      "@dip/crypto":
+        specifier: workspace:*
+        version: link:../crypto
 
   packages/ledger: {}
 

@@ -18,6 +18,8 @@
 - Authority declarations include `approverKeyIds`.
 - Request digest excludes `approvalRef`.
 
+- `@dip/execution`: protected execution boundary with decision verification, freshness, approval recheck, single-use decisions, idempotency, connector contract, and an attempt log that includes refusals.
+
 ### Notes
 
 - No approval workflow, execution boundary, evidence, ledger, verifier, SDK, CLI, API or connectors yet.
