@@ -57,6 +57,8 @@
 
 - node-postgres adapter for the storage interface, with a real-server test that runs in CI against PostgreSQL 16.
 
+- Specification documents 1 to 21, drafted to match the implementation. Canonical encoding is renumbered from section 3 to section 5.
+
 ### Notes
 
 - No approval workflow, execution boundary, evidence, ledger, verifier, SDK, CLI, API or connectors yet.
