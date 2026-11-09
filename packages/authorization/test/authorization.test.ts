@@ -15,6 +15,7 @@ import {
   signRevocation,
   type AuthorityBody,
 } from "@dip/authority";
+import { ApprovalStore, signApprovalDecision, type ApprovalState } from "@dip/approval";
 import {
   DECISION_DOMAIN,
   evaluate,
@@ -42,25 +43,35 @@ interface World {
   trust: TrustRootSet;
   issuer: SigningKeyPair;
   engine: SigningKeyPair;
+  approver: SigningKeyPair;
+  approvals: ApprovalStore;
   ctx: EvaluationContext;
 }
 
 function world(now: Date = NOW): World {
   const issuer = generateSigningKeyPair();
   const engine = generateSigningKeyPair();
+  const approver = generateSigningKeyPair();
   const trust = new TrustRootSet();
   trust.add({
     keyId: "issuer-key-1",
     jwk: exportEd25519PublicJwk(issuer.publicKey),
     status: "ACTIVE",
   });
+  trust.add({
+    keyId: "approver-key-1",
+    jwk: exportEd25519PublicJwk(approver.publicKey),
+    status: "ACTIVE",
+  });
   const registry = new AuthorityRegistry(trust);
+  const approvals = new ApprovalStore(trust);
   const ctx: EvaluationContext = {
     registry,
     now: () => now,
     signer: { keyId: "engine-1", privateKey: engine.privateKey },
+    approvals,
   };
-  return { registry, trust, issuer, engine, ctx };
+  return { registry, trust, issuer, engine, approver, approvals, ctx };
 }
 
 function authorityBody(overrides: Partial<AuthorityBody> = {}): AuthorityBody {
@@ -78,6 +89,7 @@ function authorityBody(overrides: Partial<AuthorityBody> = {}): AuthorityBody {
     currencies: ["INR"],
     approvalAboveMinor: null,
     approvalActions: [],
+    approverKeyIds: ["approver-key-1"],
     validFrom: "2026-01-01T00:00:00Z",
     validUntil: "2027-01-01T00:00:00Z",
     delegatedFrom: null,
@@ -284,10 +296,10 @@ describe("mandatory authorization outcomes", () => {
     expect(reasons(w, req())).toEqual(["APPROVAL_REQUIRED"]);
   });
 
-  it("11b. approval reference that is not verified cannot satisfy a required approval", () => {
+  it("11b. approval reference with no approval record cannot satisfy a required approval", () => {
     const w = world();
     publish(w, authorityBody({ approvalAboveMinor: 1_000_000 }));
-    expect(reasons(w, req({ approvalRef: "appr-1" }))).toEqual(["APPROVAL_NOT_VERIFIED"]);
+    expect(reasons(w, req({ approvalRef: "appr-1" }))).toEqual(["APPROVAL_NOT_FOUND"]);
   });
 
   it("16. amount limit cannot be overridden by an approval reference", () => {
@@ -398,5 +410,137 @@ describe("delegation", () => {
     expect(reasons(w, req({ authorityRef: { authorityId: "auth-child", version: 1 } }))).toEqual([
       "AUTHORITY_REVOKED",
     ]);
+  });
+});
+
+describe("approval workflow (mandatory tests 11-17)", () => {
+  const REQUESTED = "2026-06-01T11:00:00Z";
+  const EXPIRES = "2026-06-01T13:00:00Z";
+  const DIGEST_40K = normalizeRequest(requestInput()).requestDigest;
+
+  function approvalWorld(): World {
+    const w = world();
+    publish(w, authorityBody({ approvalAboveMinor: 1_000_000 }));
+    return w;
+  }
+
+  function requestApproval(w: World, digestFor: string = DIGEST_40K, expiresAt = EXPIRES): void {
+    w.approvals.request(
+      {
+        approvalId: "appr-1",
+        organizationId: "org-acme",
+        requestDigest: digestFor,
+        authorityRef: { authorityId: "auth-vendor-payments", version: 1 },
+        policyRef: { policyId: "policy-payments", version: 1 },
+        approverKeyId: "approver-key-1",
+        requestedAt: REQUESTED,
+        expiresAt,
+      },
+      new Date(REQUESTED),
+    );
+  }
+
+  function decide(
+    w: World,
+    action: "APPROVE" | "REJECT" | "REVOKE",
+    at: string = "2026-06-01T11:30:00Z",
+  ): ApprovalState {
+    const signed = signApprovalDecision(
+      { approvalId: "appr-1", action, approverKeyId: "approver-key-1", decidedAt: at },
+      w.approver.privateKey,
+    );
+    return w.approvals.decide(signed, new Date(at));
+  }
+
+  it("11c. pending approval produces DENY", () => {
+    const w = approvalWorld();
+    requestApproval(w);
+    expect(reasons(w, req({ approvalRef: "appr-1" }))).toEqual(["APPROVAL_PENDING"]);
+  });
+
+  it("12. rejected approval produces DENY", () => {
+    const w = approvalWorld();
+    requestApproval(w);
+    expect(decide(w, "REJECT")).toBe("REJECTED");
+    expect(reasons(w, req({ approvalRef: "appr-1" }))).toEqual(["APPROVAL_REJECTED"]);
+  });
+
+  it("13. expired approval produces DENY", () => {
+    const w = approvalWorld();
+    requestApproval(w);
+    expect(decide(w, "APPROVE")).toBe("APPROVED");
+    w.approvals.status("appr-1", new Date(EXPIRES));
+    const later = { ...w, ctx: { ...w.ctx, now: () => new Date("2026-06-01T14:00:00Z") } };
+    expect(reasons(later, req({ approvalRef: "appr-1" }))).toEqual(["APPROVAL_EXPIRED"]);
+  });
+
+  it("14. revoked approval produces DENY", () => {
+    const w = approvalWorld();
+    requestApproval(w);
+    decide(w, "APPROVE");
+    expect(decide(w, "REVOKE", "2026-06-01T11:45:00Z")).toBe("REVOKED");
+    expect(reasons(w, req({ approvalRef: "appr-1" }))).toEqual(["APPROVAL_REVOKED"]);
+  });
+
+  it("15. modified request invalidates the approval", () => {
+    const w = approvalWorld();
+    requestApproval(w);
+    decide(w, "APPROVE");
+    const modified = req({ amount: { minor: 4_500_000, currency: "INR" }, approvalRef: "appr-1" });
+    expect(reasons(w, modified)).toEqual(["APPROVAL_BINDING_MISMATCH"]);
+  });
+
+  it("16. approval cannot override the authority limit", () => {
+    const w = approvalWorld();
+    const big = normalizeRequest(
+      requestInput({ amount: { minor: 8_000_000, currency: "INR" } }),
+    ).requestDigest;
+    requestApproval(w, big);
+    decide(w, "APPROVE");
+    expect(
+      reasons(w, req({ amount: { minor: 8_000_000, currency: "INR" }, approvalRef: "appr-1" })),
+    ).toEqual(["AMOUNT_EXCEEDS_LIMIT"]);
+  });
+
+  it("17. valid approval followed by re-evaluation produces ALLOW", () => {
+    const w = approvalWorld();
+    requestApproval(w);
+    decide(w, "APPROVE");
+    expect(evaluate(req({ approvalRef: "appr-1" }), w.ctx).body.result).toBe("ALLOW");
+  });
+
+  it("approval by a non-designated key is refused", () => {
+    const w = approvalWorld();
+    requestApproval(w);
+    const impostor = generateSigningKeyPair();
+    const signed = signApprovalDecision(
+      {
+        approvalId: "appr-1",
+        action: "APPROVE",
+        approverKeyId: "approver-key-1",
+        decidedAt: "2026-06-01T11:30:00Z",
+      },
+      impostor.privateKey,
+    );
+    expect(codeOf(() => w.approvals.decide(signed, new Date("2026-06-01T11:30:00Z")))).toBe(
+      "APPROVAL_SIGNATURE_INVALID",
+    );
+  });
+
+  it("an approval cannot be decided twice (replay)", () => {
+    const w = approvalWorld();
+    requestApproval(w);
+    decide(w, "APPROVE");
+    expect(codeOf(() => decide(w, "APPROVE", "2026-06-01T11:31:00Z"))).toBe(
+      "APPROVAL_INVALID_TRANSITION",
+    );
+  });
+
+  it("an approval never authorizes by itself: execution-relevant result is the engine's ALLOW", () => {
+    const w = approvalWorld();
+    requestApproval(w);
+    decide(w, "APPROVE");
+    expect(w.approvals.status("appr-1", new Date("2026-06-01T11:31:00Z"))).toBe("APPROVED");
+    expect(reasons(w, req())).toEqual(["APPROVAL_REQUIRED"]);
   });
 });

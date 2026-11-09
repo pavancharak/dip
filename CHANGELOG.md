@@ -10,6 +10,14 @@
 - Spec section 3 (canonical encoding).
 - CI workflow definition.
 
+- `@dip/approval`: approval workflow with signed transitions, request binding, expiry, rejection, revocation and audit history.
+- Authorization now consults approvals; mandatory approval tests 11–17.
+
+### Changed
+
+- Authority declarations include `approverKeyIds`.
+- Request digest excludes `approvalRef`.
+
 ### Notes
 
 - No approval workflow, execution boundary, evidence, ledger, verifier, SDK, CLI, API or connectors yet.

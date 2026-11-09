@@ -39,6 +39,7 @@ function body(overrides: Partial<AuthorityBody> = {}): AuthorityBody {
     currencies: ["INR"],
     approvalAboveMinor: null,
     approvalActions: [],
+    approverKeyIds: ["approver-key-1"],
     validFrom: "2026-01-01T00:00:00Z",
     validUntil: "2027-01-01T00:00:00Z",
     delegatedFrom: null,

@@ -7,6 +7,7 @@ import {
   type DelegationRef,
 } from "@dip/authority";
 import type { KeyObject } from "node:crypto";
+import { ApprovalStore } from "@dip/approval";
 import { digestRequest, parseNormalizedRequest, type NormalizedRequest } from "./normalize.js";
 
 /** The authorization engine has exactly two outcomes. No other value is permitted. */
@@ -26,6 +27,7 @@ export interface EvaluationContext {
   /** Injected clock. Protocol logic never reads the system time directly. */
   readonly now: () => Date;
   readonly signer: EngineSigner;
+  readonly approvals: ApprovalStore;
 }
 
 export interface CheckRecord {
@@ -70,6 +72,7 @@ function delegationReason(child: AuthorityBody, parent: AuthorityBody): string |
     child.maxAmountMinor > parent.maxAmountMinor ||
     !subset(child.permittedActions, parent.permittedActions) ||
     !subset(child.currencies, parent.currencies) ||
+    !subset(child.approverKeyIds, parent.approverKeyIds) ||
     (!parent.resourceScope.includes("*") && !subset(child.resourceScope, parent.resourceScope)) ||
     Date.parse(child.validFrom) < Date.parse(parent.validFrom) ||
     Date.parse(child.validUntil) > Date.parse(parent.validUntil);
@@ -174,12 +177,23 @@ export function evaluate(input: unknown, ctx: EvaluationContext): SignedDecision
           request.amount.minor > a.approvalAboveMinor) ||
         a.approvalActions.includes(request.operation);
       if (approvalRequired) {
-        // Approval verification is Phase 3. Until it exists, an approval reference cannot satisfy this check.
-        record(
-          "APPROVAL",
-          false,
-          request.approvalRef === null ? "APPROVAL_REQUIRED" : "APPROVAL_NOT_VERIFIED",
-        );
+        if (request.approvalRef === null) {
+          record("APPROVAL", false, "APPROVAL_REQUIRED");
+        } else {
+          // Approval is a workflow record. It only counts if it is APPROVED now and bound to this exact request.
+          const code = ctx.approvals.verifyFor(
+            request.approvalRef,
+            {
+              organizationId: request.organizationId,
+              requestDigest: normalized.requestDigest,
+              authorityRef,
+              policyRef,
+              approverKeyIds: a.approverKeyIds,
+            },
+            ctx.now(),
+          );
+          record("APPROVAL", code === null, code ?? "");
+        }
       }
     } else {
       // Standing failed: request-level checks are not meaningful against an unusable authority.

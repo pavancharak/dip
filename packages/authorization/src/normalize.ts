@@ -136,8 +136,16 @@ export function parseRequestBody(input: unknown): RequestBody {
   };
 }
 
+/**
+ * Digest over the request content. `approvalRef` is excluded: an approval must
+ * be created for the content before its reference can exist, so the reference
+ * cannot be part of the content it approves. Any change to the content still
+ * changes the digest and invalidates the approval.
+ */
 export function digestRequest(body: RequestBody): string {
-  return digestWithDomain(REQUEST_DOMAIN, canonicalize(body));
+  const content: Record<string, unknown> = { ...body };
+  delete content.approvalRef;
+  return digestWithDomain(REQUEST_DOMAIN, canonicalize(content));
 }
 
 export function normalizeRequest(input: unknown): NormalizedRequest {

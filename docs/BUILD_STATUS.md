@@ -1,6 +1,6 @@
 # Build Status
 
-Last updated: 2026-11-09. Branch: `claude/loving-babbage-m3gl20`. `main` mirrors this branch.
+Last updated: 2026-11-09. Phase 2 is on `main`; Phase 3 is on branch `phase3-approval`.
 
 ## Phase report
 
@@ -35,14 +35,23 @@ Implemented and tested:
 
 Not done: a persistent store (registry is in memory); approval-required paths beyond "approval reference not verified"; decision verification at the execution boundary.
 
-### Phases 3–11: NOT STARTED
+### Phase 3: Approval workflow (implemented and tested)
+
+- Approval store with states PENDING, APPROVED, REJECTED, EXPIRED, REVOKED. These are workflow states only; the engine never returns them as outcomes.
+- Approvals bind to the request digest, organization, authority version, policy version and one approver key. Decisions are signed by that key.
+- Expiry is computed from the clock. Decisions are single-transition and replay-safe. Audit history is kept per approval.
+- The engine re-evaluates the request after approval. An approval never grants authority.
+- Mandatory tests 11–17 pass. Test results: 79 passed (79).
+- Not done: persistence, approver groups, approval requests over an API.
+
+### Phases 4–11: NOT STARTED
 
 Approval workflow, execution control, evidence, ledger, independent verifier, SDK, CLI, REST API, connectors, conformance suite, adversarial tests, deployment and release audit are not started.
 
 ## Commands and results (local)
 
 - `pnpm check` (build, typecheck, ESLint, Prettier, Vitest): exit 0.
-- Tests: 59 passed in 4 files (crypto 9, authority 14, authorization 36 across the suites).
+- Tests: 79 passed (all packages).
 
 ## Known limitations
 

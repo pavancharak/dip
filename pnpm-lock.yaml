@@ -31,7 +31,14 @@ importers:
 
   packages/api: {}
 
-  packages/approval: {}
+  packages/approval:
+    dependencies:
+      "@dip/authority":
+        specifier: workspace:*
+        version: link:../authority
+      "@dip/crypto":
+        specifier: workspace:*
+        version: link:../crypto
 
   packages/authority:
     dependencies:
@@ -41,6 +48,9 @@ importers:
 
   packages/authorization:
     dependencies:
+      "@dip/approval":
+        specifier: workspace:*
+        version: link:../approval
       "@dip/authority":
         specifier: workspace:*
         version: link:../authority

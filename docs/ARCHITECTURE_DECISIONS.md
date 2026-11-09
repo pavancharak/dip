@@ -55,3 +55,11 @@ Accepted. Canonical encoding and hashing live in `packages/crypto` (not a separa
 ## ADR-0014: Patent-risk review pending
 
 Open. Parmana classifies signed execution audit trails, maker-checker enforcement and signal/intent binding as PATENT-RISK. DIP's approval and evidence designs must be reviewed before implementation. Not reviewed yet.
+
+## ADR-0015: Request digest excludes approvalRef
+
+Accepted. An approval is created for request content before its reference exists, so the reference cannot be part of the bound content. Any change to the content changes the digest and invalidates the approval. A different approval reference to an approval bound to the same content is acceptable: that approval already covers the content.
+
+## ADR-0016: Approver keys are part of the authority declaration
+
+Accepted. Each authority lists the approver keys allowed to approve its requests. The engine refuses approvals from any other key, and delegated authorities cannot widen the approver set.
