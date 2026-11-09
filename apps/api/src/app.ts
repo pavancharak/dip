@@ -44,6 +44,13 @@ interface Context {
   readonly principal: Principal;
 }
 
+export interface RouteInfo {
+  readonly method: string;
+  readonly path: string;
+  readonly auth: "public" | "principal";
+  readonly scope?: string;
+}
+
 interface Route {
   readonly method: string;
   readonly segments: readonly string[];
@@ -74,7 +81,10 @@ function mapDipError(err: DipError): ApiResponse {
   return error(400, code, err.message);
 }
 
-export function createApi(config: ApiConfig): { handle(req: ApiRequest): Promise<ApiResponse> } {
+export function createApi(config: ApiConfig): {
+  handle(req: ApiRequest): Promise<ApiResponse>;
+  describeRoutes(): RouteInfo[];
+} {
   const client = config.client;
   const counters = new Map<string, { windowStart: number; count: number }>();
 
@@ -304,6 +314,15 @@ export function createApi(config: ApiConfig): { handle(req: ApiRequest): Promise
   }
 
   return {
+    /** Route table for the OpenAPI description. Contains no handlers. */
+    describeRoutes(): RouteInfo[] {
+      return routes.map((r) => ({
+        method: r.method,
+        path: "/" + r.segments.join("/"),
+        auth: r.auth,
+        ...(r.scope === undefined ? {} : { scope: r.scope }),
+      }));
+    },
     async handle(req: ApiRequest): Promise<ApiResponse> {
       try {
         const [pathOnly = "/", queryString = ""] = req.path.split("?", 2);
