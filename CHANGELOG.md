@@ -47,6 +47,8 @@
 
 - Server wired to durable storage: a journal of state changes in PostgreSQL, replayed at startup, with responses returned only after their changes are written.
 
+- OpenAPI description generated from the route table, and a threat model covering 21 threats.
+
 ### Notes
 
 - No approval workflow, execution boundary, evidence, ledger, verifier, SDK, CLI, API or connectors yet.
