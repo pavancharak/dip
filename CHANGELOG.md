@@ -20,6 +20,9 @@
 
 - `@dip/execution`: protected execution boundary with decision verification, freshness, approval recheck, single-use decisions, idempotency, connector contract, and an attempt log that includes refusals.
 
+- `@dip/evidence`: evidence envelope with separate authorization and execution sections, enforced invariants, Ed25519 signatures.
+- `@dip/ledger`: append-only hash-chained evidence ledger and standalone chain verifier with head anchoring.
+
 ### Notes
 
 - No approval workflow, execution boundary, evidence, ledger, verifier, SDK, CLI, API or connectors yet.

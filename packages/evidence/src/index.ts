@@ -1,1 +1,18 @@
-export {};
+export {
+  EVIDENCE_DOMAIN,
+  LEDGER_ENTRY_DOMAIN,
+  GENESIS_DIGEST,
+  checkInvariants,
+  createEvidence,
+  entryDigest,
+  parseSignedEvidence,
+  verifyEvidenceSignature,
+  type ChainPosition,
+  type EvidenceAuthorization,
+  type EvidenceBody,
+  type EvidenceDraft,
+  type EvidenceExecution,
+  type ExecutionState,
+  type Signer,
+  type SignedEvidence,
+} from "./envelope.js";
