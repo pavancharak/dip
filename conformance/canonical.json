@@ -1,0 +1,56 @@
+{
+  "suite": "dip-conformance",
+  "suiteVersion": "1.0.0",
+  "protocolVersion": "1.0",
+  "cases": [
+    {
+      "id": "sorted-keys",
+      "input": {
+        "b": 1,
+        "a": 2
+      },
+      "canonical": "{\"a\":2,\"b\":1}"
+    },
+    {
+      "id": "nested-and-null",
+      "input": {
+        "z": [
+          {
+            "y": 1,
+            "x": null
+          }
+        ],
+        "a": true
+      },
+      "canonical": "{\"a\":true,\"z\":[{\"x\":null,\"y\":1}]}"
+    },
+    {
+      "id": "string-escapes",
+      "input": "a\"b\nc",
+      "canonical": "\"a\\\"b\\nc\""
+    },
+    {
+      "id": "unicode-kept",
+      "input": {
+        "name": "₹"
+      },
+      "canonical": "{\"name\":\"₹\"}"
+    },
+    {
+      "id": "reject-float",
+      "input": {
+        "rate": 1.5
+      },
+      "expectError": "CanonicalEncodingError"
+    },
+    {
+      "id": "domain-separated-digest",
+      "input": {
+        "requestDigest": "x"
+      },
+      "canonical": "{\"requestDigest\":\"x\"}",
+      "domain": "DIP-DECISION-V1",
+      "sha256": "e174af5838b7a02e22ae915a53874cc579348caffe1ab14cb4c54ab7dcfa00ae"
+    }
+  ]
+}

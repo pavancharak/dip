@@ -50,6 +50,7 @@ function world(rateMax = 1000) {
     ["key-operator", { name: "operator", tenantId: "tenant-1", scopes: [] }],
     ["key-approver", { name: "approver", tenantId: "tenant-1", scopes: ["approver"] }],
     ["key-admin", { name: "admin", tenantId: null, scopes: ["admin", "approver"] }],
+    ["key-tenant2", { name: "other-tenant", tenantId: "tenant-2", scopes: [] }],
   ]);
   const api = createApi({
     client,
@@ -227,13 +228,11 @@ describe("authorization and execution", () => {
   it("execute runs an ALLOW decision, records evidence, and returns its id", async () => {
     const { api, keys } = world();
     await publish(api, keys);
-    const normalized = await api.handle(
-      req("POST", "/v1/requests/normalize", "key-operator", rawRequest()),
-    );
+    await api.handle(req("POST", "/v1/requests/normalize", "key-operator", rawRequest()));
     const authorized = await api.handle(req("POST", "/v1/authorize", "key-operator", rawRequest()));
     const decision = (authorized.body as { decision: unknown }).decision;
     const exec = await api.handle(
-      req("POST", "/v1/execute", "key-operator", { request: normalized.body, decision }),
+      req("POST", "/v1/execute", "key-operator", { request: rawRequest(), decision }),
     );
     expect(exec.status).toBe(200);
     const body = exec.body as { attempt: { state: string }; evidenceId: string };
@@ -245,17 +244,35 @@ describe("authorization and execution", () => {
     );
   });
 
+  it("another tenant cannot read this tenant's evidence", async () => {
+    const { api, keys } = world();
+    await publish(api, keys);
+    await api.handle(req("POST", "/v1/requests/normalize", "key-operator", rawRequest()));
+    const authorized = await api.handle(req("POST", "/v1/authorize", "key-operator", rawRequest()));
+    const exec = await api.handle(
+      req("POST", "/v1/execute", "key-operator", {
+        request: rawRequest(),
+        decision: (authorized.body as { decision: unknown }).decision,
+      }),
+    );
+    const evidenceId = (exec.body as { evidenceId: string }).evidenceId;
+    expect(
+      (await api.handle(req("GET", `/v1/evidence/${evidenceId}`, "key-operator"))).status,
+    ).toBe(200);
+    expect((await api.handle(req("GET", `/v1/evidence/${evidenceId}`, "key-tenant2"))).status).toBe(
+      404,
+    );
+  });
+
   it("execute refuses a DENY decision without calling the connector", async () => {
     const { api, keys } = world();
     await publish(api, keys);
     const input = rawRequest({ amount: { minor: 80_000_000, currency: "INR" } });
     const authorized = await api.handle(req("POST", "/v1/authorize", "key-operator", input));
-    const normalized = await api.handle(
-      req("POST", "/v1/requests/normalize", "key-operator", input),
-    );
+    await api.handle(req("POST", "/v1/requests/normalize", "key-operator", input));
     const exec = await api.handle(
       req("POST", "/v1/execute", "key-operator", {
-        request: normalized.body,
+        request: rawRequest(),
         decision: (authorized.body as { decision: unknown }).decision,
       }),
     );
@@ -328,7 +345,7 @@ describe("approvals", () => {
     const res = await api.handle(
       req("POST", "/v1/approvals/appr-2/approve", "key-approver", rejected),
     );
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(422);
   });
 });
 

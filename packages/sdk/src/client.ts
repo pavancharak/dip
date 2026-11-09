@@ -80,6 +80,8 @@ export class DipClient {
   private readonly ctx: EvaluationContext;
   private readonly boundary: ExecutionBoundary;
   private readonly ledger: EvidenceLedger;
+  /** Service-side index: which tenant each evidence record belongs to. Not part of the signed record. */
+  private readonly evidenceTenants = new Map<string, string>();
 
   constructor(private readonly config: DipClientConfig) {
     for (const root of config.trustRoots) this.trust.add(root);
@@ -97,6 +99,14 @@ export class DipClient {
       now: config.now,
       maxDecisionAgeSeconds: config.maxDecisionAgeSeconds ?? 300,
       timeoutMs: config.executionTimeoutMs ?? 5000,
+      authorityRecheck: (request) => {
+        // Re-authorize against current authority state. A revoked, expired or superseded
+        // authority stops execution even when the original decision was ALLOW.
+        const fresh = evaluate(normalizeRequest(request), this.ctx);
+        return fresh.body.result === "ALLOW"
+          ? null
+          : (fresh.body.reasonCodes[0] ?? "AUTHORIZATION_DENIED");
+      },
       approvalRecheck: (request) =>
         this.approvals.verifyFor(
           request.approvalRef ?? "",
@@ -194,6 +204,7 @@ export class DipClient {
   record(input: RecordInput): SignedEvidence {
     const sequence = this.ledger.size() + 1;
     const evidenceId = `ev-${String(sequence).padStart(8, "0")}`;
+    this.evidenceTenants.set(evidenceId, input.normalized.request.tenantId);
     return this.ledger.append(
       draftFrom({
         evidenceId,
@@ -209,6 +220,10 @@ export class DipClient {
   evidenceAt(index: number): SignedEvidence | undefined {
     const line = this.ledger.export()[index];
     return line === undefined ? undefined : parseSignedEvidence(JSON.parse(line));
+  }
+
+  tenantOfEvidence(evidenceId: string): string | undefined {
+    return this.evidenceTenants.get(evidenceId);
   }
 
   findEvidence(evidenceId: string): SignedEvidence | undefined {

@@ -1,6 +1,6 @@
 # Build Status
 
-Last updated: 2026-11-09. Phase 2 is on `main`; Phases 2 and 3 are merged; Phase 8 is on branch `phase8-connectors`.
+Last updated: 2026-11-09. Phase 2 is on `main`; Phases 2 and 3 are merged; Phase 9 is on branch `phase9-conformance`.
 
 ## Phase report
 
@@ -81,14 +81,26 @@ Not done: a persistent store (registry is in memory); approval-required paths be
 - Tests: 155 passed across all packages. The connector tests use fake transports, and verify that a DENY decision never reaches the transport and an ALLOW decision reaches it exactly once.
 - Not verified: the adapters' endpoints are placeholders on `*.example.invalid`. No live vendor was called, because no credentials or network access were available. The default transport for production is not built. Each vendor's real request and response formats still need to be checked against its documentation.
 
-### Phases 9–11: NOT STARTED
+### Phase 9: Conformance and security testing (completed for the scope listed; defects fixed)
+
+- Conformance suite: `conformance/` holds JSON fixtures: 6 canonical cases (sorted keys, nested values, string escapes, Unicode, digest with domain separation, float rejection) and 10 bundle cases (valid, tampered, modified request, duplicate entries, altered approval, non-canonical entry, missing request, unknown key). `packages/conformance` runs them against an implementation. The fixtures contain public keys, signed records and expected verdicts only. Regeneration is deterministic and is checked by a test.
+- Adversarial suite: 18 tests in `packages/conformance/test/adversarial.test.ts`, plus API tests for cross-tenant reads.
+- Defects found by this phase and fixed:
+  1. HIGH: an authority revoked after an ALLOW decision still executed. Execution now re-authorizes against current authority state.
+  2. HIGH: evidence could be read across tenants through the API. Evidence reads now check the owning tenant, and other tenants get 404.
+  3. MEDIUM: Ed25519 signatures had non-canonical base64url encodings that verified (malleability). Verification now rejects them.
+  4. MEDIUM: an approval decision was not checked against the approval window. Decisions before the request or after expiry are now refused.
+  5. PROCESS: `pnpm test` did not run the API tests, because the Vitest config included only `packages/*`. The config now includes `apps/*`, and four API test contract errors were corrected. Earlier Phase 7 test counts did not include the API suite.
+- Residual risks: an in-process caller can still call a connector's `execute` directly, since JavaScript cannot restrict that without a capability design. Tail truncation is undetectable without an external anchor. The API keys are configured in code. No external security review has been done. The conformance fixtures have not been run by an independent implementation.
+
+### Phases 10–11: NOT STARTED
 
 Approval workflow, execution control, evidence, ledger, independent verifier, SDK, CLI, REST API, connectors, conformance suite, adversarial tests, deployment and release audit are not started.
 
 ## Commands and results (local)
 
 - `pnpm check` (build, typecheck, ESLint, Prettier, Vitest): exit 0.
-- Tests: 155 passed (all packages).
+- Tests: 197 passed (all packages, including apps/api).
 
 ## Known limitations
 

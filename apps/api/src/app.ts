@@ -212,9 +212,12 @@ export function createApi(config: ApiConfig): { handle(req: ApiRequest): Promise
       method: "GET",
       segments: ["v1", "evidence", ":id"],
       auth: "principal",
-      handler: ({ params }) => {
+      handler: ({ params, principal }) => {
         const found = client.findEvidence(params.id ?? "");
-        return found
+        const owner = client.tenantOfEvidence(params.id ?? "");
+        // Another tenant's evidence is reported as not found, so its existence is not revealed.
+        const visible = principal.tenantId === null || owner === principal.tenantId;
+        return found && visible
           ? { status: 200, body: { evidence: found } }
           : error(404, "EVIDENCE_NOT_FOUND", "evidence not found");
       },
