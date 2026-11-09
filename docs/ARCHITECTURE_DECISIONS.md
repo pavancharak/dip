@@ -83,3 +83,20 @@ Accepted. `@dip/verifier` depends only on `@dip/crypto`. It re-implements the pa
 ## ADR-0021: Verdict precedence
 
 Accepted. INVALID outranks UNVERIFIABLE, which outranks INCOMPLETE, which outranks VALID. A tampered record is never masked by a missing key elsewhere in the bundle.
+
+## ADR-0022: One writer per ledger until measured load requires sharding
+
+Accepted. Evidence is a single hash chain. Each entry signs over the head, so one ledger has one writer at a time. The server enforces this in two places: the SDK serializes `record` calls, and the PostgreSQL ledger holds an advisory lock for each append.
+
+Measured limit: a KMS signature takes about 40 ms (p50, us-east-1, from the sandbox), and the lock is held for that long. One process therefore records about 25 entries per second. Authorization itself is not serialized and scales with the process count, but every authorization that is recorded goes through the ledger.
+
+Options considered:
+
+1. **Keep one writer per ledger (chosen now).** Simple, and the chain stays a single total order that the verifier checks directly. Enough for an initial production load of about 25 recorded entries per second per ledger.
+2. **Shard the ledger by tenant.** Each tenant gets its own chain, head and writer. Tenants already have separate evidence scopes, and the verifier checks each chain independently. This is the planned route when one tenant or one deployment exceeds the limit. It needs a bundle format that names the chain, and the verifier must check every chain it is given.
+3. **Batch signing.** One KMS signature covers a batch of entries, with a Merkle root per batch. It raises throughput without sharding, but it changes the evidence format and needs its own specification and conformance vectors. Not chosen until the format work is scheduled.
+4. **Multiple writers on one chain with leader election.** Rejected. It adds failover complexity to a chain that must stay strictly ordered.
+
+Scaling out the API tier (more processes) is safe only for authorization. Rate limits are per process today, so a limit enforced across processes needs a shared store; this is not built.
+
+Revisit when: recorded entries per ledger approach 20 per second sustained, or when a tenant's evidence volume needs a separate retention or isolation boundary.
