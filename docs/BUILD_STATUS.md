@@ -9,4 +9,4 @@
 | Protocol specification              | Skeleton only                              |
 | Reference implementation (Phase 1)  | Not started                                |
 
-No blockers. Phase 1 (protocol implementation) has not started.
+Phase 1 in progress: canonical encoding, hashing and signing are implemented and tested. Authority model, authorization, approval and the spec sections for them are pending.
