@@ -95,9 +95,9 @@ function record(name, ok) {
 
 // Example 1: authorized payment, executed, evidenced, and independently verified.
 const ok = request(4_000_000, "ex1");
-const allow = client.authorize(ok);
+const allow = await client.authorize(ok);
 const executed = await client.execute(ok, allow.decision);
-client.record({ normalized: ok, decision: allow.decision, attempt: executed });
+await client.record({ normalized: ok, decision: allow.decision, attempt: executed });
 const bundle = {
   format: "dip-evidence-bundle",
   formatVersion: 1,
@@ -118,7 +118,7 @@ record(
 
 // Example 2: over the limit is DENY and never reaches the connector.
 const big = request(8_000_000, "ex2");
-const deny = client.authorize(big);
+const deny = await client.authorize(big);
 const refused = await client.execute(big, deny.decision);
 record(
   "2. ₹80,000 payment is DENY and the connector is not called",
