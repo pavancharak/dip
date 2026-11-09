@@ -4,6 +4,12 @@ Last updated: 2026-11-09. Phase 2 is on `main`; Phases 2 and 3 are merged; Phase
 
 ## Phase report
 
+### Phase 19: Specification (21 sections, drafts)
+
+- `docs/spec/01` to `21` cover the sections the master instruction lists. Thirteen match the implementation, seven are drafts with their gaps stated, and section 20 points to the threat model.
+- Canonical encoding moves from section 3 to section 5. Active references were updated.
+- Not done: review of the drafts by someone other than the author, and completing the seven drafts.
+
 ### Phase 0: Repository audit
 
 - Repository: `pavancharak/dip` (created by owner, empty at start).
