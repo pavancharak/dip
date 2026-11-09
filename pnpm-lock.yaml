@@ -68,6 +68,12 @@ importers:
       "@dip/crypto":
         specifier: workspace:*
         version: link:../../packages/crypto
+      "@dip/sdk":
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      "@dip/storage":
+        specifier: workspace:*
+        version: link:../../packages/storage
       "@dip/verifier":
         specifier: workspace:*
         version: link:../../packages/verifier
@@ -75,9 +81,6 @@ importers:
       "@dip/api":
         specifier: workspace:*
         version: link:../api
-      "@dip/sdk":
-        specifier: workspace:*
-        version: link:../../packages/sdk
 
   examples:
     dependencies:

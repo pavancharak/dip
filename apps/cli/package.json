@@ -20,7 +20,9 @@
     "@dip/authorization": "workspace:*",
     "@dip/conformance": "workspace:*",
     "@dip/crypto": "workspace:*",
-    "@dip/verifier": "workspace:*"
+    "@dip/verifier": "workspace:*",
+    "@dip/sdk": "workspace:*",
+    "@dip/storage": "workspace:*"
   },
   "devDependencies": {
     "@dip/api": "workspace:*",

@@ -52,6 +52,12 @@ dip verify bundle.json --trust trust.json --json
 dip conformance run conformance/
 ```
 
+## Backups
+
+Backups must be taken from a stopped server. A running server holds the data directory open, and copying it while it writes can produce an inconsistent copy. A backup is refused if its evidence chain does not verify.
+
+Verification uses a scratch copy in the system temporary directory, which is removed afterwards. To detect a truncated tail, pass the head recorded outside the system with `--head`. Without it, the manifest is trusted for its head.
+
 ## Limits
 
 - Key files are read from disk. Keep them out of version control.

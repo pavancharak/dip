@@ -9,6 +9,7 @@ import {
   type CanonicalCase,
 } from "@dip/conformance";
 import { verifyBundle, type TrustRootInput, type VerificationResult } from "@dip/verifier";
+import { createBackup, restoreBackup, verifyBackup, type BackupResult } from "./backup.js";
 
 /**
  * The `dip` command. Exit codes:
@@ -221,6 +222,8 @@ export async function runCli(argv: readonly string[], io: CliIo): Promise<CliRes
         return await ledger(sub, flags, io, json);
       case "conformance":
         return conformance(sub, positionals[2], io, json);
+      case "backup":
+        return await backup(sub, positionals.slice(2), flags, io, json);
       default:
         throw new UsageError(`unknown command: ${group}`);
     }
@@ -407,6 +410,57 @@ function conformance(
   };
 }
 
+async function backup(
+  sub: string | undefined,
+  rest: string[],
+  flags: Map<string, string | true>,
+  io: CliIo,
+  json: boolean,
+): Promise<CliResult> {
+  const trustPath =
+    typeof flags.get("trust") === "string" ? (flags.get("trust") as string) : undefined;
+  if (trustPath === undefined)
+    throw new UsageError("--trust <file> is required for backup commands");
+  const trust = loadJson(io, trustPath) as TrustRootInput[];
+  let result: BackupResult;
+  if (sub === "create" && rest[0] !== undefined && rest[1] !== undefined) {
+    result = await createBackup(rest[0], rest[1], trust, new Date());
+  } else if (sub === "verify" && rest[0] !== undefined) {
+    const head = typeof flags.get("head") === "string" ? (flags.get("head") as string) : undefined;
+    result = await verifyBackup(rest[0], trust, head);
+  } else if (sub === "restore" && rest[0] !== undefined && rest[1] !== undefined) {
+    result = await restoreBackup(rest[0], rest[1], trust);
+  } else {
+    throw new UsageError(
+      "usage: dip backup create <data-dir> <dest> | verify <backup> [--head H] | restore <backup> <target>  (all need --trust)",
+    );
+  }
+  const exitCode = result.ok
+    ? EXIT.OK
+    : [
+          "DATA_DIR_MISSING",
+          "DESTINATION_NOT_EMPTY",
+          "TARGET_NOT_EMPTY",
+          "MANIFEST_MISSING",
+          "UNSUPPORTED_MANIFEST",
+          "DATA_MISSING",
+        ].includes(result.code)
+      ? EXIT.USAGE
+      : EXIT.NEGATIVE;
+  const body = {
+    code: result.code,
+    detail: result.detail,
+    ...(result.manifest ? { manifest: result.manifest } : {}),
+  };
+  return {
+    exitCode,
+    stdout: json
+      ? JSON.stringify(body, null, 2) + "\n"
+      : `${result.ok ? "ok" : "failed"}: ${result.detail}\n`,
+    stderr: "",
+  };
+}
+
 const USAGE = `dip — command-line client for DIP
 
   dip authority create <file>                 validate a declaration
@@ -422,6 +476,9 @@ const USAGE = `dip — command-line client for DIP
   dip ledger inspect [--offset N --limit N]
   dip ledger verify [--head H]
   dip conformance run <suite-dir>
+  dip backup create <data-dir> <dest> --trust <file>    (stop the server first)
+  dip backup verify <backup> [--head H] --trust <file>
+  dip backup restore <backup> <target> --trust <file>
 
 Global: --url <base> (or DIP_URL), --api-key <key> (or DIP_API_KEY), --json
 

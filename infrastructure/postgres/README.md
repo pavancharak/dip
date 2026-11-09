@@ -23,7 +23,8 @@ Triggers stop ordinary application mistakes and accidental edits. A database own
 
 ## Backups and recovery
 
-- Back up with `pg_dump` or continuous WAL archiving. Test restores regularly.
+- For the server's file-backed database, use `dip backup create` while the server is stopped, then `dip backup verify` and `dip backup restore`. See `docs/CLI.md`.
+- For a networked PostgreSQL server, `pg_dump` or continuous WAL archiving applies. The `dip backup` commands do not cover it.
 - After a restore, run `verify(head)` against the head you recorded outside the database. A restore that drops recent evidence then fails verification.
 - No retention policy is implemented. Evidence is kept indefinitely.
 

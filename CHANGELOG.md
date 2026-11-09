@@ -57,6 +57,8 @@
 
 - node-postgres adapter for the storage interface, with a real-server test that runs in CI against PostgreSQL 16.
 
+- `dip backup create|verify|restore`: backups of the stopped file-backed database with a manifest, chain verification and restore.
+
 ### Notes
 
 - No approval workflow, execution boundary, evidence, ledger, verifier, SDK, CLI, API or connectors yet.
