@@ -8,3 +8,6 @@ coverage/
 keys/
 *.pem
 *.key
+
+# Local secrets and runtime configuration. Never commit.
+secrets/

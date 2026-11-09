@@ -1,6 +1,6 @@
 # Build Status
 
-Last updated: 2026-11-09. Phase 2 is on `main`; Phases 2 and 3 are merged; Phase 9 is on branch `phase9-conformance`.
+Last updated: 2026-11-09. Phase 2 is on `main`; Phases 2 and 3 are merged; Phase 10 is on branch `phase10-deploy`.
 
 ## Phase report
 
@@ -93,14 +93,23 @@ Not done: a persistent store (registry is in memory); approval-required paths be
   5. PROCESS: `pnpm test` did not run the API tests, because the Vitest config included only `packages/*`. The config now includes `apps/*`, and four API test contract errors were corrected. Earlier Phase 7 test counts did not include the API suite.
 - Residual risks: an in-process caller can still call a connector's `execute` directly, since JavaScript cannot restrict that without a capability design. Tail truncation is undetectable without an external anchor. The API keys are configured in code. No external security review has been done. The conformance fixtures have not been run by an independent implementation.
 
-### Phases 10–11: NOT STARTED
+### Phase 10: Documentation and deployment (partially implemented)
+
+- Runnable examples: `examples/run.mjs` runs four scenarios on a fresh install (authorized payment verified as VALID, refused payment over the limit, tampered evidence detected, revoked authority stopping execution). It passes 4/4 locally.
+- Server: `apps/api` starts from a configuration file, loads keys and API keys from files, and fails closed on any invalid setting. `apps/api/dist/keygen.js` generates signing keys. Startup was checked locally: health returns 200, unauthenticated requests get 401, and a missing configuration exits with status 1.
+- Container: a multi-stage Dockerfile runs as a non-root user with no secrets in the image. `docker-compose.yml` mounts secrets read-only and drops capabilities. **The image has not been built here**, because no Docker daemon is available in this environment. The CI `docker` job will be the first build.
+- CI: jobs for examples, image build, and production dependency audit have been added. They have not yet run on GitHub.
+- Documentation: `docs/deployment/README.md` covers installation, keys, configuration, running, independent verification, key rotation, and limits. `ENVIRONMENT.md` lists every variable and field.
+- Not done: durable storage, migrations, backups and recovery, a release workflow that publishes anything (packages are private), and operations monitoring.
+
+### Phase 11: NOT STARTED
 
 Approval workflow, execution control, evidence, ledger, independent verifier, SDK, CLI, REST API, connectors, conformance suite, adversarial tests, deployment and release audit are not started.
 
 ## Commands and results (local)
 
 - `pnpm check` (build, typecheck, ESLint, Prettier, Vitest): exit 0.
-- Tests: 197 passed (all packages, including apps/api).
+- Tests: 205 passed (all packages, including apps/api).
 
 ## Known limitations
 
