@@ -219,6 +219,12 @@ export class ApprovalStore {
     );
     if (!ok)
       throw new DipError("APPROVAL_SIGNATURE_INVALID", "approval decision signature is invalid");
+    if (Date.parse(signed.body.decidedAt) < Date.parse(rec.binding.requestedAt)) {
+      throw new DipError("INVALID_FIELD", "decidedAt precedes the approval request");
+    }
+    if (Date.parse(signed.body.decidedAt) >= Date.parse(rec.binding.expiresAt)) {
+      throw new DipError("APPROVAL_EXPIRED", "decision falls outside the approval window");
+    }
     if (Date.parse(signed.body.decidedAt) > nowMs) {
       throw new DipError("INVALID_FIELD", "decidedAt is in the future");
     }

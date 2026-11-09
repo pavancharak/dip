@@ -1,0 +1,18 @@
+{
+  "suite": "dip-conformance",
+  "suiteVersion": "1.0.0",
+  "protocolVersion": "1.0",
+  "canonical": "canonical.json",
+  "bundles": [
+    "bundles/valid-allow-executed.json",
+    "bundles/valid-deny-recorded.json",
+    "bundles/valid-approval-gated.json",
+    "bundles/invalid-tampered-entry.json",
+    "bundles/invalid-modified-request.json",
+    "bundles/invalid-duplicate-entries.json",
+    "bundles/invalid-approval-altered.json",
+    "bundles/invalid-non-canonical-entry.json",
+    "bundles/incomplete-missing-request.json",
+    "bundles/unverifiable-unknown-evidence-key.json"
+  ]
+}

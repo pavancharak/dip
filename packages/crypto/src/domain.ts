@@ -36,5 +36,10 @@ export function verifyWithDomain(
     return false;
   }
   const bytes = Buffer.from(signature, "base64url");
+  // Reject non-canonical encodings. In base64url the final character holds unused
+  // padding bits, so different strings could otherwise decode to the same signature.
+  if (bytes.toString("base64url") !== signature) {
+    return false;
+  }
   return verify(null, domainMessage(domain, canonical), publicKey, bytes);
 }

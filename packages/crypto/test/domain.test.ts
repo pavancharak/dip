@@ -49,4 +49,16 @@ describe("Ed25519 JWK import/export", () => {
     const keys = generateSigningKeyPair();
     expect(() => exportEd25519PublicJwk(keys.privateKey)).toThrow("not an Ed25519 public key");
   });
+
+  it("rejects a non-canonical encoding of a valid signature (malleability)", () => {
+    const keys = generateSigningKeyPair();
+    const sig = signWithDomain(A, "{}", keys.privateKey);
+    const last = sig.slice(-1);
+    const alternates = "AEIMQUYcgkosw048".split("").filter((c) => c !== last);
+    for (const alt of alternates) {
+      const variant = sig.slice(0, -1) + alt;
+      expect(verifyWithDomain(A, "{}", variant, keys.publicKey)).toBe(false);
+    }
+    expect(verifyWithDomain(A, "{}", sig, keys.publicKey)).toBe(true);
+  });
 });

@@ -53,6 +53,8 @@ export interface BoundaryOptions {
   readonly timeoutMs: number;
   /** Re-checks a referenced approval at execution time. Returns a reason code, or null when still valid. */
   readonly approvalRecheck?: (request: RequestBody) => string | null;
+  /** Re-checks that the authority is still in good standing at execution time. Returns a reason code, or null. */
+  readonly authorityRecheck?: (request: RequestBody) => string | null;
 }
 
 interface KnownKey {
@@ -216,7 +218,13 @@ export class ExecutionBoundary {
     if (nowMs - evaluatedMs > this.options.maxDecisionAgeSeconds * 1000)
       return refuse(decisionId, "DECISION_STALE");
 
-    // 5. Approval evidence must still hold at execution time when referenced.
+    // 5. The authority must still be in good standing: a decision does not outlive its authority.
+    if (this.options.authorityRecheck) {
+      const standing = this.options.authorityRecheck(request);
+      if (standing !== null) return refuse(decisionId, standing);
+    }
+
+    // 6. Approval evidence must still hold at execution time when referenced.
     if (request.approvalRef !== null) {
       const recheck = this.options.approvalRecheck;
       if (!recheck) return refuse(decisionId, "APPROVAL_RECHECK_UNAVAILABLE");
@@ -224,7 +232,7 @@ export class ExecutionBoundary {
       if (code !== null) return refuse(decisionId, code);
     }
 
-    // 6. Idempotency: a completed action is never repeated for the same key.
+    // 8. Idempotency: a completed action is never repeated for the same key.
     const done = this.completed.get(key);
     if (done !== undefined) {
       if (done.digest !== requestDigest) return refuse(decisionId, "IDEMPOTENCY_CONFLICT");
@@ -242,11 +250,11 @@ export class ExecutionBoundary {
     // 7. Replay: a decision authorizes at most one execution.
     if (this.consumed.has(decisionId)) return refuse(decisionId, "DECISION_REPLAYED");
 
-    // 8. Connector routing.
+    // 9. Connector routing.
     const connector = this.options.connectors.get(request.operation);
     if (!connector) return refuse(decisionId, "CONNECTOR_NOT_FOUND");
 
-    // 9. Execution. The decision is consumed before the connector runs.
+    // 10. Execution. The decision is consumed before the connector runs.
     this.consumed.add(decisionId);
     this.inFlight.add(key);
     this.record("STARTED", {

@@ -1,0 +1,207 @@
+{
+  "id": "valid-deny-recorded",
+  "description": "DENY decision recorded with no execution",
+  "bundle": {
+    "format": "dip-evidence-bundle",
+    "formatVersion": 1,
+    "entries": [
+      "{\"body\":{\"approvalRef\":null,\"authorization\":{\"authorityRef\":{\"authorityId\":\"auth-vendor-payments\",\"version\":1},\"decisionId\":\"4ddc2ede7d23772118280e19db1ea725513665430c749c14bd33c67f1c0e8aa1\",\"decisionSigningKeyId\":\"engine-1\",\"evaluatedAt\":\"2026-06-01T12:00:00Z\",\"policyRef\":{\"policyId\":\"policy-payments\",\"version\":1},\"reasonCodes\":[\"AMOUNT_EXCEEDS_LIMIT\",\"APPROVAL_REQUIRED\"],\"result\":\"DENY\"},\"evidenceId\":\"ev-00000001\",\"execution\":{\"attemptedAt\":\"2026-06-01T12:00:00Z\",\"connectorId\":null,\"externalRef\":null,\"reasonCode\":\"DECISION_NOT_ALLOW\",\"state\":\"REFUSED\"},\"previousDigest\":\"0000000000000000000000000000000000000000000000000000000000000000\",\"protocolVersion\":\"1.0\",\"recordedAt\":\"2026-06-01T12:00:00Z\",\"request\":{\"idempotencyKey\":\"idem-1\",\"requestDigest\":\"812f444ccffd8fd7d802482ca9a4b3b3e17474b6838ceec4dcfb12018c37b041\",\"requestId\":\"req-1\"},\"sequence\":1,\"signatureAlgorithm\":\"Ed25519\",\"signingKeyId\":\"evidence-1\",\"transactionId\":\"txn-1\"},\"signature\":\"ozW8ZjE1oZMtO88dKVsvypBP9Qi6feHhjCD8kbKMgTCbcyNCmfPvEAErYcIJvk4c69dX6MrDZiIP03AYZ0xiAg\"}"
+    ],
+    "expectedHead": "8bc3a356c7ec8fdd04a7873c676b68cd3fded30e01636e64333466f92d070840",
+    "requests": [
+      {
+        "body": {
+          "requestId": "req-1",
+          "transactionId": "txn-1",
+          "organizationId": "org-acme",
+          "tenantId": "tenant-1",
+          "actor": "payments-agent",
+          "operation": "payment.create",
+          "resource": "vendor-42",
+          "amount": {
+            "minor": 8000000,
+            "currency": "INR"
+          },
+          "parameters": {
+            "invoice": "INV-7",
+            "payeeAccount": "acc-9"
+          },
+          "authorityRef": {
+            "authorityId": "auth-vendor-payments",
+            "version": 1
+          },
+          "policyRef": {
+            "policyId": "policy-payments",
+            "version": 1
+          },
+          "approvalRef": null,
+          "idempotencyKey": "idem-1",
+          "protocolVersion": "1.0"
+        },
+        "requestDigest": "812f444ccffd8fd7d802482ca9a4b3b3e17474b6838ceec4dcfb12018c37b041"
+      }
+    ],
+    "decisions": [
+      {
+        "body": {
+          "decisionId": "4ddc2ede7d23772118280e19db1ea725513665430c749c14bd33c67f1c0e8aa1",
+          "requestDigest": "812f444ccffd8fd7d802482ca9a4b3b3e17474b6838ceec4dcfb12018c37b041",
+          "authorityRef": {
+            "authorityId": "auth-vendor-payments",
+            "version": 1
+          },
+          "policyRef": {
+            "policyId": "policy-payments",
+            "version": 1
+          },
+          "result": "DENY",
+          "reasonCodes": [
+            "AMOUNT_EXCEEDS_LIMIT",
+            "APPROVAL_REQUIRED"
+          ],
+          "checks": [
+            {
+              "check": "REQUEST_DIGEST",
+              "passed": true,
+              "reasonCode": null
+            },
+            {
+              "check": "AUTHORITY_STANDING",
+              "passed": true,
+              "reasonCode": null
+            },
+            {
+              "check": "ORGANIZATION",
+              "passed": true,
+              "reasonCode": null
+            },
+            {
+              "check": "TENANT",
+              "passed": true,
+              "reasonCode": null
+            },
+            {
+              "check": "POLICY_VERSION",
+              "passed": true,
+              "reasonCode": null
+            },
+            {
+              "check": "ACTOR",
+              "passed": true,
+              "reasonCode": null
+            },
+            {
+              "check": "ACTION",
+              "passed": true,
+              "reasonCode": null
+            },
+            {
+              "check": "RESOURCE",
+              "passed": true,
+              "reasonCode": null
+            },
+            {
+              "check": "CURRENCY",
+              "passed": true,
+              "reasonCode": null
+            },
+            {
+              "check": "AMOUNT_LIMIT",
+              "passed": false,
+              "reasonCode": "AMOUNT_EXCEEDS_LIMIT"
+            },
+            {
+              "check": "APPROVAL",
+              "passed": false,
+              "reasonCode": "APPROVAL_REQUIRED"
+            }
+          ],
+          "evaluatedAt": "2026-06-01T12:00:00Z",
+          "protocolVersion": "1.0"
+        },
+        "signingKeyId": "engine-1",
+        "signature": "lwLGL-M_fiDKt62-98fwqynb6QPqvhdCYnv64H-YUense_KkhwuaRPCAehd2_5CbKJKL-UABwmFSEMVoFWkIBw"
+      }
+    ],
+    "authorities": [
+      {
+        "body": {
+          "agent": "payments-agent",
+          "approvalAboveMinor": 1000000,
+          "approvalActions": [],
+          "approverKeyIds": [
+            "approver-key-1"
+          ],
+          "authorityId": "auth-vendor-payments",
+          "currencies": [
+            "INR"
+          ],
+          "delegatedFrom": null,
+          "delegationAllowed": false,
+          "issuer": "cfo",
+          "maxAmountMinor": 5000000,
+          "organizationId": "org-acme",
+          "permittedActions": [
+            "payment.create"
+          ],
+          "policyId": "policy-payments",
+          "policyVersion": 1,
+          "principal": "cfo",
+          "protocolVersion": "1.0",
+          "resourceScope": [
+            "vendor-42"
+          ],
+          "signatureAlgorithm": "Ed25519",
+          "signingKeyId": "issuer-key-1",
+          "tenantId": "tenant-1",
+          "validFrom": "2026-01-01T00:00:00Z",
+          "validUntil": "2027-01-01T00:00:00Z",
+          "version": 1
+        },
+        "signature": "VdtgdaxPgnl3BGlUMK6rghhNu330Sm2u_I5ABEycswuZ3uRkoLjrIcePGLPcBu_fwcVUH789Ol8SU8UIo07oDQ"
+      }
+    ],
+    "approvals": []
+  },
+  "trust": [
+    {
+      "keyId": "issuer-key-1",
+      "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "wamqUjpfG7PYKuIImSZUvCGpln70h7G5l_71j5yuFm4"
+      },
+      "status": "ACTIVE"
+    },
+    {
+      "keyId": "engine-1",
+      "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "BNjopeGbLF_QumR_vreL5ozI2cC4VO01-vCZLS1wIsk"
+      },
+      "status": "ACTIVE"
+    },
+    {
+      "keyId": "evidence-1",
+      "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "lcbLFUOxFDrbcXXR5C8pRjah6lVLLZ4i0bIPVbcnf-g"
+      },
+      "status": "ACTIVE"
+    },
+    {
+      "keyId": "approver-key-1",
+      "jwk": {
+        "kty": "OKP",
+        "crv": "Ed25519",
+        "x": "AofIxTlQO-mE-BC3HX94VOnKmaZKlg8V5F4HVbHlo8Y"
+      },
+      "status": "ACTIVE"
+    }
+  ],
+  "expected": {
+    "verdict": "VALID"
+  }
+}

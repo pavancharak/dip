@@ -28,7 +28,16 @@
 - `@dip/sdk`: developer client with strict ALLOW/DENY authorization, separate approval methods, evidence recording and verification.
 - `@dip/api`: versioned REST API (handler and node:http adapter) with API-key auth, scopes, tenant checks, rate limiting and typed errors.
 
+- `@dip/conformance`: language-neutral JSON conformance suite with a reference runner, and adversarial tests.
 - `@dip/connectors`: connector contract and adapters for payments, refunds, vendor payouts, ERP, CRM and generic HTTP. Tested with fake transports. Endpoints are placeholders, not live integrations.
+
+### Fixed
+
+- Execution re-checks authority standing, so a revoked or expired authority stops execution even after an ALLOW decision.
+- Signature verification rejects non-canonical base64url encodings.
+- Approval decisions must fall inside the approval window.
+- API evidence reads are restricted to the owning tenant.
+- `pnpm test` now runs the `apps/` test suites.
 
 ### Notes
 
