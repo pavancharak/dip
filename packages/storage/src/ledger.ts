@@ -34,7 +34,12 @@ export class PostgresEvidenceLedger {
       const last = head.rows[0];
       const sequence = last === undefined ? 1 : Number(last.sequence) + 1;
       const previous = last === undefined ? GENESIS_DIGEST : String(last.entry_digest);
-      const signed = createEvidence(draft, { sequence, previousDigest: previous }, this.signer);
+      // The advisory lock above is held while signing, so a KMS round trip serializes appends.
+      const signed = await createEvidence(
+        draft,
+        { sequence, previousDigest: previous },
+        this.signer,
+      );
       try {
         await tx.query(
           "INSERT INTO evidence_ledger (sequence, evidence_id, entry_canonical, entry_digest, previous_digest) VALUES ($1, $2, $3, $4, $5)",

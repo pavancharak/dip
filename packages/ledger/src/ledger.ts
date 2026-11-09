@@ -79,6 +79,7 @@ export class EvidenceLedger {
   private readonly lines: string[] = [];
   private readonly ids = new Set<string>();
   private lastDigest: string = GENESIS_DIGEST;
+  private queue: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly trust: TrustRootSet,
@@ -94,11 +95,24 @@ export class EvidenceLedger {
     this.lastDigest = entryDigest(signed);
   }
 
-  append(draft: EvidenceDraft): SignedEvidence {
+  /**
+   * Appends one entry. Appends run one at a time: each signs over the chain head
+   * as it stands when its turn comes, so two writers cannot fork the chain.
+   */
+  append(draft: EvidenceDraft): Promise<SignedEvidence> {
+    const next = this.queue.then(() => this.appendNow(draft));
+    this.queue = next.then(
+      () => undefined,
+      () => undefined,
+    );
+    return next;
+  }
+
+  private async appendNow(draft: EvidenceDraft): Promise<SignedEvidence> {
     if (this.ids.has(draft.evidenceId)) {
       throw new DipError("EVIDENCE_DUPLICATE", `evidence ${draft.evidenceId} is already recorded`);
     }
-    const signed = createEvidence(
+    const signed = await createEvidence(
       draft,
       { sequence: this.lines.length + 1, previousDigest: this.lastDigest },
       this.signer,

@@ -26,15 +26,16 @@ import { ExecutionBoundary, type Connector, type ExecutionAttempt } from "@dip/e
 import { EvidenceLedger, draftFrom, type VerificationReport } from "@dip/ledger";
 import { parseSignedEvidence, type SignedEvidence } from "@dip/evidence";
 import { verifyBundle, type VerificationResult } from "@dip/verifier";
-import type { KeyObject } from "node:crypto";
+import { asSigningProvider, type SignerInput, type SigningProvider } from "@dip/crypto";
 
 /** The only authorization outcomes the SDK exposes. */
 export type AuthorizationResult = "ALLOW" | "DENY";
 
-export interface Signer {
-  readonly keyId: string;
-  readonly privateKey: KeyObject;
-}
+/** A signer: a key pair held in process, or a provider such as a KMS-backed one. */
+export type Signer = SignerInput;
+
+/** Re-exported so callers can wrap their own key custody. */
+export type { SigningProvider };
 
 export interface DipClientConfig {
   /** Every trusted public key: issuers, engine, evidence signer, approvers. */
@@ -99,6 +100,7 @@ export class DipClient {
   private readonly ledger: EvidenceLedger;
   /** Service-side index: which tenant each evidence record belongs to. Not part of the signed record. */
   private readonly evidenceTenants = new Map<string, string>();
+  private recordQueue: Promise<unknown> = Promise.resolve();
 
   constructor(private readonly config: DipClientConfig) {
     for (const root of config.trustRoots) this.trust.add(root);
@@ -112,7 +114,7 @@ export class DipClient {
     this.ctx = {
       registry: this.registry,
       now: config.now,
-      signer: { keyId: config.engine.keyId, privateKey: config.engine.privateKey },
+      signer: asSigningProvider(config.engine),
       approvals: this.approvals,
     };
     this.boundary = new ExecutionBoundary({
@@ -122,10 +124,10 @@ export class DipClient {
       maxDecisionAgeSeconds: config.maxDecisionAgeSeconds ?? 300,
       timeoutMs: config.executionTimeoutMs ?? 5000,
       journal: this.journal,
-      authorityRecheck: (request) => {
+      authorityRecheck: async (request) => {
         // Re-authorize against current authority state. A revoked, expired or superseded
         // authority stops execution even when the original decision was ALLOW.
-        const fresh = evaluate(normalizeRequest(request), this.ctx);
+        const fresh = await evaluate(normalizeRequest(request), this.ctx);
         return fresh.body.result === "ALLOW"
           ? null
           : (fresh.body.reasonCodes[0] ?? "AUTHORIZATION_DENIED");
@@ -148,10 +150,7 @@ export class DipClient {
     });
     this.ledger = new EvidenceLedger(
       this.trust,
-      {
-        keyId: config.evidenceSigner.keyId,
-        privateKey: config.evidenceSigner.privateKey,
-      },
+      asSigningProvider(config.evidenceSigner),
       this.journal,
     );
   }
@@ -184,8 +183,8 @@ export class DipClient {
     return normalizeRequest(input);
   }
 
-  authorize(normalized: NormalizedRequest): AuthorizationOutcome {
-    const decision = evaluate(normalized, this.ctx);
+  async authorize(normalized: NormalizedRequest): Promise<AuthorizationOutcome> {
+    const decision = await evaluate(normalized, this.ctx);
     return { result: decision.body.result, decision };
   }
 
@@ -228,7 +227,20 @@ export class DipClient {
     return this.boundary.execute(normalized, decision);
   }
 
-  record(input: RecordInput): SignedEvidence {
+  /**
+   * Records one evidence entry. Calls run one at a time, so each reads the ledger size
+   * it will actually extend and gets a unique evidence id.
+   */
+  record(input: RecordInput): Promise<SignedEvidence> {
+    const next = this.recordQueue.then(() => this.recordNow(input));
+    this.recordQueue = next.then(
+      () => undefined,
+      () => undefined,
+    );
+    return next;
+  }
+
+  private async recordNow(input: RecordInput): Promise<SignedEvidence> {
     const sequence = this.ledger.size() + 1;
     const evidenceId = `ev-${String(sequence).padStart(8, "0")}`;
     this.evidenceTenants.set(evidenceId, input.normalized.request.tenantId);

@@ -7,5 +7,7 @@ export {
   LocalSigningProvider,
   keyFingerprint,
   signWithProvider,
+  asSigningProvider,
+  type SignerInput,
   type SigningProvider,
 } from "./provider.js";

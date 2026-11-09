@@ -119,9 +119,9 @@ async function seed(dataDir: string, k: Keys): Promise<void> {
     protocolVersion: "1.0",
   };
   const normalized = client.normalizeRequest(raw);
-  const decision = client.authorize(normalized).decision;
+  const decision = (await client.authorize(normalized)).decision;
   const attempt = await client.execute(normalized, decision);
-  client.record({ normalized, decision, attempt });
+  await client.record({ normalized, decision, attempt });
   await client.flush();
   await db.close?.();
 }
@@ -226,7 +226,7 @@ describe("backup, verify and restore", () => {
     );
   });
 
-  it("directory digests are stable across identical trees and change with any byte", () => {
+  it("directory digests are stable across identical trees and change with any byte", async () => {
     const a = tempDir("dip-dig-");
     writeFileSync(join(a, "f"), "one");
     const first = directoryDigest(a).digest;

@@ -188,7 +188,7 @@ async function scenario(opts: {
     approvalRecords.push({ binding, decisions: [decision] });
   }
 
-  const decision: SignedDecision = evaluate(normalized, ctx);
+  const decision: SignedDecision = await evaluate(normalized, ctx);
   const connector: Connector = okConnector;
   const boundary = new ExecutionBoundary({
     trust,
@@ -203,7 +203,7 @@ async function scenario(opts: {
     keyId: "evidence-1",
     privateKey: keys.evidence.privateKey,
   });
-  ledger.append(
+  await ledger.append(
     draftFrom({
       evidenceId: `ev-${opts.idempotencyKey ?? "idem-1"}`,
       transactionId: "txn-1",
@@ -405,7 +405,7 @@ describe("independent verification", () => {
     expect(checkIds(verifyBundle(bundle, s.roots), "FAIL")).toContain("PROTOCOL_VERSION");
   });
 
-  it("an empty bundle is INCOMPLETE, never VALID", () => {
+  it("an empty bundle is INCOMPLETE, never VALID", async () => {
     const r = verifyBundle(
       { format: BUNDLE_FORMAT, formatVersion: 1, entries: [], expectedHead: null },
       [],
@@ -413,7 +413,7 @@ describe("independent verification", () => {
     expect(r.verdict).toBe("INCOMPLETE");
   });
 
-  it("malformed trust roots stop verification with a typed error", () => {
+  it("malformed trust roots stop verification with a typed error", async () => {
     expect(() =>
       verifyBundle({ format: BUNDLE_FORMAT, formatVersion: 1, entries: [] }, [
         { keyId: "bad", jwk: { kty: "OKP", crv: "Ed25519", x: "not-a-key" }, status: "ACTIVE" },
@@ -421,7 +421,7 @@ describe("independent verification", () => {
     ).toThrow(VerifierError);
   });
 
-  it("an unsupported bundle format is refused", () => {
+  it("an unsupported bundle format is refused", async () => {
     expect(() => verifyBundle({ format: "other", formatVersion: 1, entries: [] }, [])).toThrow(
       "unsupported bundle",
     );

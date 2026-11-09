@@ -131,40 +131,40 @@ function req(overrides: Record<string, unknown> = {}): NormalizedRequest {
   return normalizeRequest(requestInput(overrides));
 }
 
-function reasons(w: World, input: unknown): string[] {
-  return [...evaluate(input, w.ctx).body.reasonCodes];
+async function reasons(w: World, input: unknown): Promise<string[]> {
+  return [...(await evaluate(input, w.ctx)).body.reasonCodes];
 }
 
 describe("request normalization", () => {
-  it("produces identical canonical digests for equivalent inputs", () => {
+  it("produces identical canonical digests for equivalent inputs", async () => {
     const a = normalizeRequest(requestInput({ parameters: { a: 1, b: 2 } }));
     const b = normalizeRequest(requestInput({ parameters: { b: 2, a: 1 } }));
     expect(a.requestDigest).toBe(b.requestDigest);
   });
 
-  it("changes the digest when a material parameter changes", () => {
+  it("changes the digest when a material parameter changes", async () => {
     const a = normalizeRequest(requestInput());
     const b = normalizeRequest(requestInput({ amount: { minor: PAISE_80K, currency: "INR" } }));
     expect(a.requestDigest).not.toBe(b.requestDigest);
   });
 
-  it("rejects floating-point amounts", () => {
+  it("rejects floating-point amounts", async () => {
     expect(() =>
       normalizeRequest(requestInput({ amount: { minor: 400.5, currency: "INR" } })),
     ).toThrow(DipError);
   });
 
-  it("rejects unknown request fields", () => {
+  it("rejects unknown request fields", async () => {
     expect(codeOf(() => normalizeRequest(requestInput({ extra: 1 })))).toBe("UNKNOWN_FIELD");
   });
 
-  it("rejects non-canonical currency codes", () => {
+  it("rejects non-canonical currency codes", async () => {
     expect(
       codeOf(() => normalizeRequest(requestInput({ amount: { minor: 1, currency: "inr" } }))),
     ).toBe("INVALID_FIELD");
   });
 
-  it("rejects floats nested in parameters", () => {
+  it("rejects floats nested in parameters", async () => {
     expect(codeOf(() => normalizeRequest(requestInput({ parameters: { rate: 0.5 } })))).toBe(
       "INVALID_PARAMETERS",
     );
@@ -172,20 +172,20 @@ describe("request normalization", () => {
 });
 
 describe("mandatory authorization outcomes", () => {
-  it("1. valid authority and valid request produce ALLOW", () => {
+  it("1. valid authority and valid request produce ALLOW", async () => {
     const w = world();
     publish(w, authorityBody());
-    const d = evaluate(req(), w.ctx);
+    const d = await evaluate(req(), w.ctx);
     expect(d.body.result).toBe("ALLOW");
     expect(d.body.reasonCodes).toEqual([]);
   });
 
-  it("2. missing authority produces DENY", () => {
+  it("2. missing authority produces DENY", async () => {
     const w = world();
-    expect(reasons(w, req())).toEqual(["AUTHORITY_NOT_FOUND"]);
+    expect(await reasons(w, req())).toEqual(["AUTHORITY_NOT_FOUND"]);
   });
 
-  it("3. invalid authority (tampered after signing) produces DENY", () => {
+  it("3. invalid authority (tampered after signing) produces DENY", async () => {
     const w = world();
     const signed = signAuthority(authorityBody(), w.issuer.privateKey);
     w.registry.publish(signed);
@@ -197,24 +197,24 @@ describe("mandatory authorization outcomes", () => {
       other.privateKey,
     );
     expect(codeOf(() => w.registry.publish(rogue))).toBeDefined();
-    expect(reasons(w, req({ authorityRef: { authorityId: "auth-rogue", version: 1 } }))).toEqual([
-      "AUTHORITY_NOT_FOUND",
-    ]);
+    expect(
+      await reasons(w, req({ authorityRef: { authorityId: "auth-rogue", version: 1 } })),
+    ).toEqual(["AUTHORITY_NOT_FOUND"]);
   });
 
-  it("4. expired authority produces DENY", () => {
+  it("4. expired authority produces DENY", async () => {
     const w = world(new Date("2027-06-01T00:00:00Z"));
     publish(w, authorityBody());
-    expect(reasons(w, req())).toEqual(["AUTHORITY_EXPIRED"]);
+    expect(await reasons(w, req())).toEqual(["AUTHORITY_EXPIRED"]);
   });
 
-  it("4b. not-yet-valid authority produces DENY", () => {
+  it("4b. not-yet-valid authority produces DENY", async () => {
     const w = world(new Date("2025-06-01T00:00:00Z"));
     publish(w, authorityBody());
-    expect(reasons(w, req())).toEqual(["AUTHORITY_NOT_YET_VALID"]);
+    expect(await reasons(w, req())).toEqual(["AUTHORITY_NOT_YET_VALID"]);
   });
 
-  it("5. revoked authority produces DENY", () => {
+  it("5. revoked authority produces DENY", async () => {
     const w = world();
     publish(w, authorityBody());
     w.registry.revoke(
@@ -228,58 +228,60 @@ describe("mandatory authorization outcomes", () => {
         w.issuer.privateKey,
       ),
     );
-    expect(reasons(w, req())).toEqual(["AUTHORITY_REVOKED"]);
+    expect(await reasons(w, req())).toEqual(["AUTHORITY_REVOKED"]);
   });
 
-  it("5b. superseded authority version produces DENY", () => {
+  it("5b. superseded authority version produces DENY", async () => {
     const w = world();
     publish(w, authorityBody());
     publish(w, authorityBody({ version: 2, maxAmountMinor: PAISE_40K }));
-    expect(reasons(w, req())).toEqual(["AUTHORITY_SUPERSEDED"]);
+    expect(await reasons(w, req())).toEqual(["AUTHORITY_SUPERSEDED"]);
   });
 
-  it("5c. authority signed by a revoked key produces DENY", () => {
+  it("5c. authority signed by a revoked key produces DENY", async () => {
     const w = world();
     publish(w, authorityBody());
     w.trust.revoke("issuer-key-1");
-    expect(reasons(w, req())).toEqual(["AUTHORITY_KEY_REVOKED"]);
+    expect(await reasons(w, req())).toEqual(["AUTHORITY_KEY_REVOKED"]);
   });
 
-  it("6. insufficient permission (action not permitted) produces DENY", () => {
+  it("6. insufficient permission (action not permitted) produces DENY", async () => {
     const w = world();
     publish(w, authorityBody());
-    expect(reasons(w, req({ operation: "payment.delete" }))).toEqual(["ACTION_NOT_PERMITTED"]);
+    expect(await reasons(w, req({ operation: "payment.delete" }))).toEqual([
+      "ACTION_NOT_PERMITTED",
+    ]);
   });
 
-  it("6b. resource outside scope produces DENY", () => {
+  it("6b. resource outside scope produces DENY", async () => {
     const w = world();
     publish(w, authorityBody());
-    expect(reasons(w, req({ resource: "vendor-99" }))).toEqual(["RESOURCE_OUT_OF_SCOPE"]);
+    expect(await reasons(w, req({ resource: "vendor-99" }))).toEqual(["RESOURCE_OUT_OF_SCOPE"]);
   });
 
-  it("7. amount above limit produces DENY", () => {
+  it("7. amount above limit produces DENY", async () => {
     const w = world();
     publish(w, authorityBody());
-    expect(reasons(w, req({ amount: { minor: PAISE_80K, currency: "INR" } }))).toEqual([
+    expect(await reasons(w, req({ amount: { minor: PAISE_80K, currency: "INR" } }))).toEqual([
       "AMOUNT_EXCEEDS_LIMIT",
     ]);
   });
 
-  it("8. wrong currency produces DENY", () => {
+  it("8. wrong currency produces DENY", async () => {
     const w = world();
     publish(w, authorityBody());
-    expect(reasons(w, req({ amount: { minor: PAISE_40K, currency: "USD" } }))).toEqual([
+    expect(await reasons(w, req({ amount: { minor: PAISE_40K, currency: "USD" } }))).toEqual([
       "CURRENCY_NOT_PERMITTED",
     ]);
   });
 
-  it("9. invalid actor produces DENY", () => {
+  it("9. invalid actor produces DENY", async () => {
     const w = world();
     publish(w, authorityBody());
-    expect(reasons(w, req({ actor: "intruder" }))).toEqual(["ACTOR_NOT_AUTHORIZED"]);
+    expect(await reasons(w, req({ actor: "intruder" }))).toEqual(["ACTOR_NOT_AUTHORIZED"]);
   });
 
-  it("10. invalid request digest produces DENY", () => {
+  it("10. invalid request digest produces DENY", async () => {
     const w = world();
     publish(w, authorityBody());
     const good = req();
@@ -287,49 +289,52 @@ describe("mandatory authorization outcomes", () => {
       request: { ...good.request, amount: { minor: PAISE_80K, currency: "INR" } },
       requestDigest: good.requestDigest,
     };
-    expect(reasons(w, forged)).toEqual(["REQUEST_DIGEST_MISMATCH"]);
+    expect(await reasons(w, forged)).toEqual(["REQUEST_DIGEST_MISMATCH"]);
   });
 
-  it("11. approval required but absent produces DENY", () => {
+  it("11. approval required but absent produces DENY", async () => {
     const w = world();
     publish(w, authorityBody({ approvalAboveMinor: 1_000_000 }));
-    expect(reasons(w, req())).toEqual(["APPROVAL_REQUIRED"]);
+    expect(await reasons(w, req())).toEqual(["APPROVAL_REQUIRED"]);
   });
 
-  it("11b. approval reference with no approval record cannot satisfy a required approval", () => {
+  it("11b. approval reference with no approval record cannot satisfy a required approval", async () => {
     const w = world();
     publish(w, authorityBody({ approvalAboveMinor: 1_000_000 }));
-    expect(reasons(w, req({ approvalRef: "appr-1" }))).toEqual(["APPROVAL_NOT_FOUND"]);
+    expect(await reasons(w, req({ approvalRef: "appr-1" }))).toEqual(["APPROVAL_NOT_FOUND"]);
   });
 
-  it("16. amount limit cannot be overridden by an approval reference", () => {
+  it("16. amount limit cannot be overridden by an approval reference", async () => {
     const w = world();
     publish(w, authorityBody());
     expect(
-      reasons(w, req({ amount: { minor: PAISE_80K, currency: "INR" }, approvalRef: "appr-1" })),
+      await reasons(
+        w,
+        req({ amount: { minor: PAISE_80K, currency: "INR" }, approvalRef: "appr-1" }),
+      ),
     ).toEqual(["AMOUNT_EXCEEDS_LIMIT"]);
   });
 
-  it("returns only ALLOW or DENY", () => {
+  it("returns only ALLOW or DENY", async () => {
     const w = world();
     publish(w, authorityBody());
     for (const input of [req(), req({ actor: "x" })]) {
-      expect(["ALLOW", "DENY"]).toContain(evaluate(input, w.ctx).body.result);
+      expect(["ALLOW", "DENY"]).toContain((await evaluate(input, w.ctx)).body.result);
     }
   });
 
-  it("is reproducible for the same input, authority and clock", () => {
+  it("is reproducible for the same input, authority and clock", async () => {
     const w = world();
     publish(w, authorityBody());
-    const a = evaluate(req(), w.ctx).body;
-    const b = evaluate(req(), w.ctx).body;
+    const a = (await evaluate(req(), w.ctx)).body;
+    const b = (await evaluate(req(), w.ctx)).body;
     expect(a).toEqual(b);
   });
 
-  it("signs each decision with the engine key", () => {
+  it("signs each decision with the engine key", async () => {
     const w = world();
     publish(w, authorityBody());
-    const d = evaluate(req(), w.ctx);
+    const d = await evaluate(req(), w.ctx);
     expect(
       verifyWithDomain(DECISION_DOMAIN, canonicalize(d.body), d.signature, w.engine.publicKey),
     ).toBe(true);
@@ -337,7 +342,7 @@ describe("mandatory authorization outcomes", () => {
 });
 
 describe("delegation", () => {
-  it("accepts a child within its parent's bounds", () => {
+  it("accepts a child within its parent's bounds", async () => {
     const w = world();
     publish(w, authorityBody({ delegationAllowed: true }));
     publish(
@@ -349,11 +354,12 @@ describe("delegation", () => {
       }),
     );
     expect(
-      evaluate(req({ authorityRef: { authorityId: "auth-child", version: 1 } }), w.ctx).body.result,
+      (await evaluate(req({ authorityRef: { authorityId: "auth-child", version: 1 } }), w.ctx)).body
+        .result,
     ).toBe("ALLOW");
   });
 
-  it("denies a child whose limit exceeds its parent", () => {
+  it("denies a child whose limit exceeds its parent", async () => {
     const w = world();
     publish(w, authorityBody({ delegationAllowed: true, maxAmountMinor: PAISE_40K }));
     publish(
@@ -364,12 +370,12 @@ describe("delegation", () => {
         delegatedFrom: { authorityId: "auth-vendor-payments", version: 1 },
       }),
     );
-    expect(reasons(w, req({ authorityRef: { authorityId: "auth-child", version: 1 } }))).toEqual([
-      "DELEGATION_EXCEEDS_PARENT",
-    ]);
+    expect(
+      await reasons(w, req({ authorityRef: { authorityId: "auth-child", version: 1 } })),
+    ).toEqual(["DELEGATION_EXCEEDS_PARENT"]);
   });
 
-  it("denies delegation when the parent forbids it", () => {
+  it("denies delegation when the parent forbids it", async () => {
     const w = world();
     publish(w, authorityBody({ delegationAllowed: false }));
     publish(
@@ -380,12 +386,12 @@ describe("delegation", () => {
         delegatedFrom: { authorityId: "auth-vendor-payments", version: 1 },
       }),
     );
-    expect(reasons(w, req({ authorityRef: { authorityId: "auth-child", version: 1 } }))).toEqual([
-      "DELEGATION_NOT_PERMITTED",
-    ]);
+    expect(
+      await reasons(w, req({ authorityRef: { authorityId: "auth-child", version: 1 } })),
+    ).toEqual(["DELEGATION_NOT_PERMITTED"]);
   });
 
-  it("denies when the parent is revoked", () => {
+  it("denies when the parent is revoked", async () => {
     const w = world();
     publish(w, authorityBody({ delegationAllowed: true }));
     publish(
@@ -407,9 +413,9 @@ describe("delegation", () => {
         w.issuer.privateKey,
       ),
     );
-    expect(reasons(w, req({ authorityRef: { authorityId: "auth-child", version: 1 } }))).toEqual([
-      "AUTHORITY_REVOKED",
-    ]);
+    expect(
+      await reasons(w, req({ authorityRef: { authorityId: "auth-child", version: 1 } })),
+    ).toEqual(["AUTHORITY_REVOKED"]);
   });
 });
 
@@ -452,45 +458,45 @@ describe("approval workflow (mandatory tests 11-17)", () => {
     return w.approvals.decide(signed, new Date(at));
   }
 
-  it("11c. pending approval produces DENY", () => {
+  it("11c. pending approval produces DENY", async () => {
     const w = approvalWorld();
     requestApproval(w);
-    expect(reasons(w, req({ approvalRef: "appr-1" }))).toEqual(["APPROVAL_PENDING"]);
+    expect(await reasons(w, req({ approvalRef: "appr-1" }))).toEqual(["APPROVAL_PENDING"]);
   });
 
-  it("12. rejected approval produces DENY", () => {
+  it("12. rejected approval produces DENY", async () => {
     const w = approvalWorld();
     requestApproval(w);
     expect(decide(w, "REJECT")).toBe("REJECTED");
-    expect(reasons(w, req({ approvalRef: "appr-1" }))).toEqual(["APPROVAL_REJECTED"]);
+    expect(await reasons(w, req({ approvalRef: "appr-1" }))).toEqual(["APPROVAL_REJECTED"]);
   });
 
-  it("13. expired approval produces DENY", () => {
+  it("13. expired approval produces DENY", async () => {
     const w = approvalWorld();
     requestApproval(w);
     expect(decide(w, "APPROVE")).toBe("APPROVED");
     w.approvals.status("appr-1", new Date(EXPIRES));
     const later = { ...w, ctx: { ...w.ctx, now: () => new Date("2026-06-01T14:00:00Z") } };
-    expect(reasons(later, req({ approvalRef: "appr-1" }))).toEqual(["APPROVAL_EXPIRED"]);
+    expect(await reasons(later, req({ approvalRef: "appr-1" }))).toEqual(["APPROVAL_EXPIRED"]);
   });
 
-  it("14. revoked approval produces DENY", () => {
+  it("14. revoked approval produces DENY", async () => {
     const w = approvalWorld();
     requestApproval(w);
     decide(w, "APPROVE");
     expect(decide(w, "REVOKE", "2026-06-01T11:45:00Z")).toBe("REVOKED");
-    expect(reasons(w, req({ approvalRef: "appr-1" }))).toEqual(["APPROVAL_REVOKED"]);
+    expect(await reasons(w, req({ approvalRef: "appr-1" }))).toEqual(["APPROVAL_REVOKED"]);
   });
 
-  it("15. modified request invalidates the approval", () => {
+  it("15. modified request invalidates the approval", async () => {
     const w = approvalWorld();
     requestApproval(w);
     decide(w, "APPROVE");
     const modified = req({ amount: { minor: 4_500_000, currency: "INR" }, approvalRef: "appr-1" });
-    expect(reasons(w, modified)).toEqual(["APPROVAL_BINDING_MISMATCH"]);
+    expect(await reasons(w, modified)).toEqual(["APPROVAL_BINDING_MISMATCH"]);
   });
 
-  it("16. approval cannot override the authority limit", () => {
+  it("16. approval cannot override the authority limit", async () => {
     const w = approvalWorld();
     const big = normalizeRequest(
       requestInput({ amount: { minor: 8_000_000, currency: "INR" } }),
@@ -498,18 +504,21 @@ describe("approval workflow (mandatory tests 11-17)", () => {
     requestApproval(w, big);
     decide(w, "APPROVE");
     expect(
-      reasons(w, req({ amount: { minor: 8_000_000, currency: "INR" }, approvalRef: "appr-1" })),
+      await reasons(
+        w,
+        req({ amount: { minor: 8_000_000, currency: "INR" }, approvalRef: "appr-1" }),
+      ),
     ).toEqual(["AMOUNT_EXCEEDS_LIMIT"]);
   });
 
-  it("17. valid approval followed by re-evaluation produces ALLOW", () => {
+  it("17. valid approval followed by re-evaluation produces ALLOW", async () => {
     const w = approvalWorld();
     requestApproval(w);
     decide(w, "APPROVE");
-    expect(evaluate(req({ approvalRef: "appr-1" }), w.ctx).body.result).toBe("ALLOW");
+    expect((await evaluate(req({ approvalRef: "appr-1" }), w.ctx)).body.result).toBe("ALLOW");
   });
 
-  it("approval by a non-designated key is refused", () => {
+  it("approval by a non-designated key is refused", async () => {
     const w = approvalWorld();
     requestApproval(w);
     const impostor = generateSigningKeyPair();
@@ -527,7 +536,7 @@ describe("approval workflow (mandatory tests 11-17)", () => {
     );
   });
 
-  it("an approval cannot be decided twice (replay)", () => {
+  it("an approval cannot be decided twice (replay)", async () => {
     const w = approvalWorld();
     requestApproval(w);
     decide(w, "APPROVE");
@@ -536,11 +545,11 @@ describe("approval workflow (mandatory tests 11-17)", () => {
     );
   });
 
-  it("an approval never authorizes by itself: execution-relevant result is the engine's ALLOW", () => {
+  it("an approval never authorizes by itself: execution-relevant result is the engine's ALLOW", async () => {
     const w = approvalWorld();
     requestApproval(w);
     decide(w, "APPROVE");
     expect(w.approvals.status("appr-1", new Date("2026-06-01T11:31:00Z"))).toBe("APPROVED");
-    expect(reasons(w, req())).toEqual(["APPROVAL_REQUIRED"]);
+    expect(await reasons(w, req())).toEqual(["APPROVAL_REQUIRED"]);
   });
 });

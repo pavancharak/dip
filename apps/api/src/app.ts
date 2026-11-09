@@ -165,12 +165,12 @@ export function createApi(config: ApiConfig): {
       method: "POST",
       segments: ["v1", "authorize"],
       auth: "principal",
-      handler: ({ body, principal }) => {
+      handler: async ({ body, principal }) => {
         const normalized = client.normalizeRequest(body);
         if (principal.tenantId !== null && normalized.request.tenantId !== principal.tenantId) {
           return error(403, "TENANT_FORBIDDEN", "request belongs to another tenant");
         }
-        const outcome = client.authorize(normalized);
+        const outcome = await client.authorize(normalized);
         return {
           status: 200,
           body: {
@@ -216,7 +216,11 @@ export function createApi(config: ApiConfig): {
           return error(403, "TENANT_FORBIDDEN", "request belongs to another tenant");
         }
         const attempt = await client.execute(normalized, b.decision as never);
-        const evidence = client.record({ normalized, decision: b.decision as never, attempt });
+        const evidence = await client.record({
+          normalized,
+          decision: b.decision as never,
+          attempt,
+        });
         return { status: 200, body: { attempt, evidenceId: evidence.body.evidenceId } };
       },
     },

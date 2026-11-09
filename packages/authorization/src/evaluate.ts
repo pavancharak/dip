@@ -1,4 +1,10 @@
-import { canonicalize, digestWithDomain, signWithDomain } from "@dip/crypto";
+import {
+  asSigningProvider,
+  canonicalize,
+  digestWithDomain,
+  signWithProvider,
+  type SignerInput,
+} from "@dip/crypto";
 import {
   AuthorityRegistry,
   DipError,
@@ -6,7 +12,6 @@ import {
   type AuthorityBody,
   type DelegationRef,
 } from "@dip/authority";
-import type { KeyObject } from "node:crypto";
 import { ApprovalStore } from "@dip/approval";
 import { digestRequest, parseNormalizedRequest, type NormalizedRequest } from "./normalize.js";
 
@@ -17,10 +22,7 @@ export const DECISION_DOMAIN = "DIP-DECISION-V1";
 export const DECISION_ID_DOMAIN = "DIP-DECISION-ID-V1";
 export const MAX_DELEGATION_DEPTH = 8;
 
-export interface EngineSigner {
-  readonly keyId: string;
-  readonly privateKey: KeyObject;
-}
+export type EngineSigner = SignerInput;
 
 export interface EvaluationContext {
   readonly registry: AuthorityRegistry;
@@ -115,7 +117,7 @@ function standing(
  * Evaluates a normalized request. The result is ALLOW only when every check passes.
  * Malformed input throws. It never yields a decision, and a throw never permits execution.
  */
-export function evaluate(input: unknown, ctx: EvaluationContext): SignedDecision {
+export async function evaluate(input: unknown, ctx: EvaluationContext): Promise<SignedDecision> {
   const normalized: NormalizedRequest = parseNormalizedRequest(input);
   const { request } = normalized;
   const evaluatedAt = isoSeconds(ctx.now());
@@ -224,6 +226,7 @@ export function evaluate(input: unknown, ctx: EvaluationContext): SignedDecision
     evaluatedAt,
     protocolVersion: PROTOCOL_VERSION,
   };
-  const signature = signWithDomain(DECISION_DOMAIN, canonicalize(body), ctx.signer.privateKey);
-  return { body, signingKeyId: ctx.signer.keyId, signature };
+  const provider = asSigningProvider(ctx.signer);
+  const signature = await signWithProvider(provider, DECISION_DOMAIN, canonicalize(body));
+  return { body, signingKeyId: provider.keyId, signature };
 }

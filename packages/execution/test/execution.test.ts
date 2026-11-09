@@ -120,8 +120,8 @@ function publish(w: World, body: AuthorityBody): void {
   w.registry.publish(signAuthority(body, w.issuer.privateKey));
 }
 
-function allow(w: World, input: NormalizedRequest): SignedDecision {
-  return evaluate(input, w.ctx);
+async function allow(w: World, input: NormalizedRequest): Promise<SignedDecision> {
+  return await evaluate(input, w.ctx);
 }
 
 function countingConnector(
@@ -166,7 +166,7 @@ describe("protected execution boundary", () => {
     const input = req();
     const { connector, calls } = countingConnector();
     const b = boundary(w, connector);
-    const attempt = await b.execute(input, allow(w, input));
+    const attempt = await b.execute(input, await allow(w, input));
     expect(attempt.state).toBe("SUCCEEDED");
     expect(attempt.externalRef).toBe("pay-001");
     expect(calls()).toBe(1);
@@ -176,7 +176,7 @@ describe("protected execution boundary", () => {
     const w = world();
     publish(w, authorityBody());
     const input = req({ amount: { minor: PAISE_80K, currency: "INR" } });
-    const decision = allow(w, input);
+    const decision = await allow(w, input);
     expect(decision.body.result).toBe("DENY");
     const { connector, calls } = countingConnector();
     const attempt = await boundary(w, connector).execute(input, decision);
@@ -189,7 +189,7 @@ describe("protected execution boundary", () => {
     const w = world();
     publish(w, authorityBody());
     const input = req({ amount: { minor: PAISE_80K, currency: "INR" } });
-    const denied = allow(w, input);
+    const denied = await allow(w, input);
     const forged = { ...denied, body: { ...denied.body, result: "ALLOW" } };
     const { connector, calls } = countingConnector();
     const attempt = await boundary(w, connector).execute(input, forged);
@@ -203,7 +203,7 @@ describe("protected execution boundary", () => {
     const input = req();
     const rogue = generateSigningKeyPair();
     const ctx = { ...w.ctx, signer: { keyId: "engine-1", privateKey: rogue.privateKey } };
-    const decision = evaluate(input, ctx);
+    const decision = await evaluate(input, ctx);
     const { connector, calls } = countingConnector();
     const attempt = await boundary(w, connector).execute(input, decision);
     expect(attempt.reasonCode).toBe("DECISION_SIGNATURE_INVALID");
@@ -214,7 +214,7 @@ describe("protected execution boundary", () => {
     const w = world();
     publish(w, authorityBody());
     const input = req();
-    const decision = allow(w, input);
+    const decision = await allow(w, input);
     w.trust.revoke("engine-1");
     const { connector, calls } = countingConnector();
     const attempt = await boundary(w, connector).execute(input, decision);
@@ -226,7 +226,7 @@ describe("protected execution boundary", () => {
     const w = world();
     publish(w, authorityBody());
     const original = req();
-    const decision = allow(w, original);
+    const decision = await allow(w, original);
     const modified = req({ amount: { minor: 4_500_000, currency: "INR" } });
     const { connector, calls } = countingConnector();
     const attempt = await boundary(w, connector).execute(modified, decision);
@@ -239,7 +239,7 @@ describe("protected execution boundary", () => {
     publish(w, authorityBody());
     publish(w, authorityBody({ version: 2 }));
     const input = req();
-    const decision = allow(
+    const decision = await allow(
       w,
       req({ authorityRef: { authorityId: "auth-vendor-payments", version: 2 } }),
     );
@@ -253,7 +253,7 @@ describe("protected execution boundary", () => {
     const w = world();
     publish(w, authorityBody());
     const input = req();
-    const decision = allow(w, input);
+    const decision = await allow(w, input);
     const { connector, calls } = countingConnector();
     const later = new Date("2026-06-01T12:10:00Z");
     const attempt = await boundary(w, connector, { now: later, maxAge: 300 }).execute(
@@ -268,7 +268,7 @@ describe("protected execution boundary", () => {
     const w = world();
     publish(w, authorityBody());
     const input = req();
-    const decision = allow(w, input);
+    const decision = await allow(w, input);
     const { connector, calls } = countingConnector();
     const b = boundary(w, connector);
     expect((await b.execute(input, decision)).state).toBe("SUCCEEDED");
@@ -285,8 +285,8 @@ describe("protected execution boundary", () => {
     const input = req();
     const { connector, calls } = countingConnector();
     const b = boundary(w, connector);
-    await b.execute(input, allow(w, input));
-    const second = await b.execute(input, allow(w, input));
+    await b.execute(input, await allow(w, input));
+    const second = await b.execute(input, await allow(w, input));
     expect(second.state).toBe("DUPLICATE");
     expect(second.externalRef).toBe("pay-001");
     expect(calls()).toBe(1);
@@ -298,9 +298,9 @@ describe("protected execution boundary", () => {
     const first = req();
     const { connector, calls } = countingConnector();
     const b = boundary(w, connector);
-    await b.execute(first, allow(w, first));
+    await b.execute(first, await allow(w, first));
     const other = req({ parameters: { invoice: "INV-8" } });
-    const attempt = await b.execute(other, allow(w, other));
+    const attempt = await b.execute(other, await allow(w, other));
     expect(attempt.reasonCode).toBe("IDEMPOTENCY_CONFLICT");
     expect(calls()).toBe(1);
   });
@@ -313,7 +313,7 @@ describe("protected execution boundary", () => {
       status: "FAILED",
       reasonCode: "BANK_REJECTED",
     }));
-    const attempt = await boundary(w, connector).execute(input, allow(w, input));
+    const attempt = await boundary(w, connector).execute(input, await allow(w, input));
     expect(attempt.state).toBe("FAILED");
     expect(attempt.reasonCode).toBe("BANK_REJECTED");
     expect(attempt.externalRef).toBeNull();
@@ -326,7 +326,7 @@ describe("protected execution boundary", () => {
     const { connector } = countingConnector(async () => {
       throw new Error("network reset");
     });
-    const attempt = await boundary(w, connector).execute(input, allow(w, input));
+    const attempt = await boundary(w, connector).execute(input, await allow(w, input));
     expect(attempt.state).toBe("FAILED");
     expect(attempt.reasonCode).toBe("CONNECTOR_ERROR");
   });
@@ -336,7 +336,10 @@ describe("protected execution boundary", () => {
     publish(w, authorityBody());
     const input = req();
     const { connector } = countingConnector(() => new Promise<ConnectorResult>(() => undefined));
-    const attempt = await boundary(w, connector, { timeoutMs: 5 }).execute(input, allow(w, input));
+    const attempt = await boundary(w, connector, { timeoutMs: 5 }).execute(
+      input,
+      await allow(w, input),
+    );
     expect(attempt.state).toBe("TIMED_OUT");
     expect(attempt.externalRef).toBeNull();
   });
@@ -358,10 +361,10 @@ describe("protected execution boundary", () => {
       maxDecisionAgeSeconds: 300,
       timeoutMs: 1000,
     });
-    expect((await b.execute(input, allow(w, input))).state).toBe("FAILED");
+    expect((await b.execute(input, await allow(w, input))).state).toBe("FAILED");
     clock = new Date("2026-06-01T12:00:05Z");
     const laterCtx = { ...w.ctx, now: () => clock };
-    const retry = await b.execute(input, evaluate(input, laterCtx));
+    const retry = await b.execute(input, await evaluate(input, laterCtx));
     expect(retry.state).toBe("SUCCEEDED");
     expect(calls()).toBe(2);
   });
@@ -377,7 +380,7 @@ describe("protected execution boundary", () => {
       maxDecisionAgeSeconds: 300,
       timeoutMs: 100,
     });
-    expect((await b.execute(input, allow(w, input))).reasonCode).toBe("CONNECTOR_NOT_FOUND");
+    expect((await b.execute(input, await allow(w, input))).reasonCode).toBe("CONNECTOR_NOT_FOUND");
   });
 
   it("re-checks approval at execution time and refuses if it no longer holds", async () => {
@@ -411,7 +414,7 @@ describe("protected execution boundary", () => {
       new Date("2026-06-01T11:30:00Z"),
     );
     const input = req({ approvalRef: "appr-1" });
-    const decision = allow(w, input);
+    const decision = await allow(w, input);
     expect(decision.body.result).toBe("ALLOW");
     w.approvals.decide(
       signApprovalDecision(
@@ -455,7 +458,7 @@ describe("protected execution boundary", () => {
     publish(w, authorityBody());
     const input = req({ approvalRef: "appr-1" });
     const { connector, calls } = countingConnector();
-    const attempt = await boundary(w, connector).execute(input, allow(w, input));
+    const attempt = await boundary(w, connector).execute(input, await allow(w, input));
     expect(attempt.reasonCode).toBe("APPROVAL_RECHECK_UNAVAILABLE");
     expect(calls()).toBe(0);
   });
@@ -464,7 +467,7 @@ describe("protected execution boundary", () => {
     const w = world();
     publish(w, authorityBody());
     const input = req();
-    const decision = allow(w, input);
+    const decision = await allow(w, input);
     const { connector } = countingConnector();
     const b = boundary(w, connector);
     await b.execute(input, decision);

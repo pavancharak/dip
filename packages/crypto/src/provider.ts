@@ -50,6 +50,18 @@ export async function signWithProvider(
   return Buffer.from(signature).toString("base64url");
 }
 
+/** A key pair held in process, or a provider. Both are accepted; providers are preferred. */
+export type SignerInput =
+  | SigningProvider
+  | { readonly keyId: string; readonly privateKey: KeyObject };
+
+/** Returns a provider for either input form. Protocol code signs only through providers. */
+export function asSigningProvider(input: SignerInput): SigningProvider {
+  if (typeof (input as SigningProvider).sign === "function") return input as SigningProvider;
+  const pair = input as { keyId: string; privateKey: KeyObject };
+  return new LocalSigningProvider(pair.keyId, pair.privateKey);
+}
+
 /** Digest helper for auditing: a short fingerprint of a public key, for logs and change records. */
 export function keyFingerprint(jwk: Ed25519PublicJwk): string {
   return createHash("sha256").update(jwk.x).digest("hex").slice(0, 16);

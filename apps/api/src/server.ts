@@ -10,6 +10,7 @@ import {
   openPostgres,
   type SqlDatabase,
 } from "@dip/storage";
+import { resolveSigner, SignerError } from "./signers.js";
 
 /**
  * Entry point. Reads DIP_CONFIG (default /run/secrets/dip-config.json).
@@ -36,10 +37,30 @@ async function main(): Promise<void> {
   if (config.postgresUrl !== null) db = openPostgres(config.postgresUrl);
   else if (config.dataDir !== null) db = await openDatabase(config.dataDir);
   if (db !== null) await migrate(db);
+  // Signers are resolved before any state is opened. A KMS key whose public key does not
+  // match the pinned trust root stops startup here.
+  let engine;
+  let evidenceSigner;
+  try {
+    const signerOptions = { kmsRegion: config.kmsRegion };
+    engine = await resolveSigner("engine", config.engine, config.trustRoots, signerOptions);
+    evidenceSigner = await resolveSigner(
+      "evidenceSigner",
+      config.evidenceSigner,
+      config.trustRoots,
+      signerOptions,
+    );
+  } catch (err) {
+    const code = err instanceof SignerError ? err.code : "SIGNER_UNAVAILABLE";
+    const message = err instanceof Error ? err.message : "unknown error";
+    process.stderr.write(`dip-api: ${code}: ${message}\n`);
+    process.exitCode = 1;
+    return;
+  }
   const client = await DipClient.open({
     trustRoots: config.trustRoots,
-    engine: config.engine,
-    evidenceSigner: config.evidenceSigner,
+    engine,
+    evidenceSigner,
     connectors: new Map(),
     now: () => new Date(),
     maxDecisionAgeSeconds: config.maxDecisionAgeSeconds,

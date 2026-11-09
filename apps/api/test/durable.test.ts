@@ -190,9 +190,9 @@ describe("server state survives a restart (file-backed PostgreSQL)", () => {
     const client1 = await DipClient.open(clientConfig(new PostgresEventLog(db1)));
     client1.publishAuthority(signAuthority(authorityBody(), keys.issuer.privateKey));
     const normalized = client1.normalizeRequest(raw("idem-t"));
-    const decision = client1.authorize(normalized).decision;
+    const decision = (await client1.authorize(normalized)).decision;
     const attempt = await client1.execute(normalized, decision);
-    client1.record({ normalized, decision, attempt });
+    await client1.record({ normalized, decision, attempt });
     await client1.flush();
     // Alter a stored evidence record directly in the database, bypassing the application.
     // The append-only trigger is disabled first, as a database owner could do.

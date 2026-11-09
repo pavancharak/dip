@@ -42,6 +42,43 @@ function files(extra: Record<string, string> = {}): (p: string) => string {
   };
 }
 
+describe("KMS signer configuration", () => {
+  it("accepts a KMS key ID with a region", () => {
+    const c = loadConfig(
+      raw({
+        engine: { keyId: "engine-1", kmsKeyId: "alias/dip-engine" },
+        kms: { region: "us-east-1" },
+      }),
+      files(),
+    );
+    expect(c.engine.kmsKeyId).toBe("alias/dip-engine");
+    expect(c.engine.privateKey).toBeNull();
+    expect(c.kmsRegion).toBe("us-east-1");
+  });
+
+  it("refuses a KMS key without a region", () => {
+    expect(() =>
+      loadConfig(raw({ engine: { keyId: "engine-1", kmsKeyId: "alias/dip-engine" } }), files()),
+    ).toThrow("kms.region is required");
+  });
+
+  it("refuses a signer that names both a KMS key and a private key file", () => {
+    expect(() =>
+      loadConfig(
+        raw({
+          engine: {
+            keyId: "engine-1",
+            kmsKeyId: "alias/dip-engine",
+            privateKeyPath: "/run/secrets/engine.pem",
+          },
+          kms: { region: "us-east-1" },
+        }),
+        files(),
+      ),
+    ).toThrow("not both");
+  });
+});
+
 describe("storage configuration", () => {
   it("reads the PostgreSQL connection string from a secret file", () => {
     const c = loadConfig(
