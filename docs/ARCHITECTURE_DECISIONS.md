@@ -63,3 +63,15 @@ Accepted. An approval is created for request content before its reference exists
 ## ADR-0016: Approver keys are part of the authority declaration
 
 Accepted. Each authority lists the approver keys allowed to approve its requests. The engine refuses approvals from any other key, and delegated authorities cannot widen the approver set.
+
+## ADR-0017: Execution is refused unless it is provably authorized
+
+Accepted. The boundary verifies the decision signature under a trusted engine key, requires ALLOW, and requires the exact request digest, authority version and policy version. Refusals are recorded and never reach a connector.
+
+## ADR-0018: A decision authorizes at most one execution; retries need a new decision
+
+Accepted. A decision is consumed before the connector runs. Idempotency protects completed actions: the same key with the same content returns the original result. A retry after failure needs a new decision, which can only be created at a later evaluation time, and reuses the idempotency key so the external system can deduplicate.
+
+## ADR-0019: Timeouts are not failures and not successes
+
+Accepted. A connector that does not answer in time is recorded as TIMED_OUT. The outcome is unknown, so the boundary does not claim success or failure. Resolving it needs the external system's own reconciliation, which is a later phase.
