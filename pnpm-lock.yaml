@@ -54,13 +54,36 @@ importers:
         specifier: workspace:*
         version: link:../../packages/execution
 
+  apps/cli:
+    dependencies:
+      "@dip/authority":
+        specifier: workspace:*
+        version: link:../../packages/authority
+      "@dip/authorization":
+        specifier: workspace:*
+        version: link:../../packages/authorization
+      "@dip/conformance":
+        specifier: workspace:*
+        version: link:../../packages/conformance
+      "@dip/crypto":
+        specifier: workspace:*
+        version: link:../../packages/crypto
+      "@dip/verifier":
+        specifier: workspace:*
+        version: link:../../packages/verifier
+    devDependencies:
+      "@dip/api":
+        specifier: workspace:*
+        version: link:../api
+      "@dip/sdk":
+        specifier: workspace:*
+        version: link:../../packages/sdk
+
   examples:
     dependencies:
       "@dip/sdk":
         specifier: workspace:*
         version: link:../packages/sdk
-
-  packages/api: {}
 
   packages/approval:
     dependencies:
@@ -88,10 +111,6 @@ importers:
       "@dip/crypto":
         specifier: workspace:*
         version: link:../crypto
-
-  packages/authz: {}
-
-  packages/cli: {}
 
   packages/conformance:
     dependencies:
@@ -148,8 +167,6 @@ importers:
       "@dip/ledger":
         specifier: workspace:*
         version: link:../ledger
-
-  packages/core: {}
 
   packages/crypto: {}
 
@@ -224,8 +241,6 @@ importers:
       "@dip/verifier":
         specifier: workspace:*
         version: link:../verifier
-
-  packages/spec: {}
 
   packages/storage:
     dependencies:

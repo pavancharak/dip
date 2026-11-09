@@ -48,6 +48,7 @@
 - Server wired to durable storage: a journal of state changes in PostgreSQL, replayed at startup, with responses returned only after their changes are written.
 
 - OpenAPI description generated from the route table, and a threat model covering 21 threats.
+- `dip` command-line tool with all commands in the build instruction, documented exit codes, and JSON output.
 
 ### Notes
 
