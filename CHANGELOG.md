@@ -47,6 +47,11 @@
 
 - Server wired to durable storage: a journal of state changes in PostgreSQL, replayed at startup, with responses returned only after their changes are written.
 
+### Fixed
+
+- Removed five empty placeholder packages that duplicated the `@dip/api` name.
+- Removed a stale matrix row that contradicted the split API rows.
+
 ### Notes
 
 - No approval workflow, execution boundary, evidence, ledger, verifier, SDK, CLI, API or connectors yet.

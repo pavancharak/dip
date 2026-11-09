@@ -35,7 +35,6 @@ Statuses: NOT_STARTED, IN_PROGRESS, IMPLEMENTED, VERIFIED, BLOCKED. IMPLEMENTED 
 | V-01   | Evidence envelope and signatures                                         | master §5.6  | none                                                      | none                                          | NOT_STARTED                                          |
 | L-01   | Append-only hash-chained ledger                                          | master §5.7  | none                                                      | none                                          | NOT_STARTED                                          |
 | I-01   | Independent verifier                                                     | master §5.8  | none                                                      | none                                          | NOT_STARTED                                          |
-| S-01   | SDK, CLI, REST API                                                       | master §9–11 | none                                                      | none                                          | NOT_STARTED                                          |
 | K-01   | Connectors                                                               | master §5.10 | none                                                      | none                                          | NOT_STARTED                                          |
 | T-01   | Conformance suite                                                        | master §14   | none                                                      | none                                          | NOT_STARTED                                          |
 | D-01   | Persistent storage (PostgreSQL)                                          | master §12   | none                                                      | none                                          | NOT_STARTED                                          |
@@ -47,3 +46,13 @@ Statuses: NOT_STARTED, IN_PROGRESS, IMPLEMENTED, VERIFIED, BLOCKED. IMPLEMENTED 
 | D-05 | CI jobs for examples, image build, and production dependency audit | master §17 | .github/workflows/ci.yml | CI | IMPLEMENTED: the new checks have not yet run on GitHub |
 | D-06 | Database schema, migrations, backups, recovery | master §12 | none | none | NOT_STARTED: state is in memory |
 | D-07 | Server wired to durable storage; responses returned only after their changes are written | master §12 | apps/api/src/app.ts (flush in finally), apps/api/src/server.ts | apps/api/test/durable.test.ts | VERIFIED (file-backed PGlite) |
+
+| G-01 | Formal specification: sections 1–2 and 4–21 required by the master instruction | master §7 | docs/spec/ (section 3 and an index only) | none | NOT_STARTED |
+| G-02 | Pluggable key management and KMS adapter | master §5.9 | none (keys are passed in as objects or files) | none | NOT_STARTED |
+| G-03 | node-postgres adapter tested against a real PostgreSQL server | master §12 | packages/storage uses PGlite only | none | NOT_STARTED |
+| G-04 | Backup and restore tooling with ledger-head verification | master §12 | none (manual procedure in infrastructure/postgres/README.md) | none | NOT_STARTED |
+| G-05 | Retention policy | master §12 | none | none | NOT_STARTED |
+| G-06 | Independent implementation run against the conformance fixtures | master §14 | conformance/ fixtures exist | none | NOT_STARTED |
+| G-07 | External security review | master §19 | docs/RELEASE-AUDIT.md (internal) | none | NOT_STARTED |
+| G-08 | Patent-risk review of approval and evidence designs (ADR-0014) | Parmana DECISIONS §2.3 | none | none | NOT_STARTED |
+| G-09 | Live integration verification for at least one connector, with sandbox credentials | master §5.10 | adapters use placeholder endpoints | none | NOT_STARTED |
