@@ -100,7 +100,7 @@ Not done: a persistent store (registry is in memory); approval-required paths be
 - Container: a multi-stage Dockerfile runs as a non-root user with no secrets in the image. `docker-compose.yml` mounts secrets read-only and drops capabilities. **The image has not been built here**, because no Docker daemon is available in this environment. The CI `docker` job will be the first build.
 - CI: jobs for examples, image build, and production dependency audit have been added. They have not yet run on GitHub.
 - Documentation: `docs/deployment/README.md` covers installation, keys, configuration, running, independent verification, key rotation, and limits. `ENVIRONMENT.md` lists every variable and field.
-- Not done: durable storage, migrations, backups and recovery, a release workflow that publishes anything (packages are private), and operations monitoring.
+- Not done (audit scope, now partly addressed in Phase 12): durable storage, migrations, backups and recovery, a release workflow that publishes anything (packages are private), and operations monitoring.
 
 ### Phase 11: NOT STARTED
 

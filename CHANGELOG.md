@@ -42,6 +42,9 @@
 - Runnable examples (`examples/run.mjs`), server entry point with fail-closed configuration, key generator, Dockerfile, Compose file, and deployment documentation.
 - CI jobs for examples, Docker image build, and production dependency audit.
 
+- `@dip/storage`: PostgreSQL evidence ledger and authority registry with append-only triggers, serialized appends, and migrations. Tested on PGlite.
+- `infrastructure/postgres/README.md`: operations, least privilege, tamper-evidence limits, and recovery.
+
 ### Notes
 
 - No approval workflow, execution boundary, evidence, ledger, verifier, SDK, CLI, API or connectors yet.
