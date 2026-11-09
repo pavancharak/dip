@@ -56,3 +56,4 @@ Statuses: NOT_STARTED, IN_PROGRESS, IMPLEMENTED, VERIFIED, BLOCKED. IMPLEMENTED 
 | G-07 | External security review | master §19 | docs/RELEASE-AUDIT.md (internal) | none | NOT_STARTED |
 | G-08 | Patent-risk review of approval and evidence designs (ADR-0014) | Parmana DECISIONS §2.3 | none | none | NOT_STARTED |
 | G-09 | Live integration verification for at least one connector, with sandbox credentials | master §5.10 | adapters use placeholder endpoints | none | NOT_STARTED |
+| R-03b | `dip` CLI: authority create, sign, inspect, revoke; request normalize; authorize; approval create, approve, reject, inspect; execute; evidence inspect; verify; ledger inspect and verify; conformance run. Exit codes per docs/CLI.md | master §11 | apps/cli/src/cli.ts | apps/cli/test/cli.test.ts (9 tests; uses the real API handler and the conformance fixtures) | VERIFIED: human and JSON output; no `dip` config file or interactive prompts |

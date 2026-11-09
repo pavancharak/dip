@@ -47,6 +47,8 @@
 
 - Server wired to durable storage: a journal of state changes in PostgreSQL, replayed at startup, with responses returned only after their changes are written.
 
+- `dip` command-line tool with all commands in the build instruction, documented exit codes, and JSON output.
+
 ### Fixed
 
 - Removed five empty placeholder packages that duplicated the `@dip/api` name.

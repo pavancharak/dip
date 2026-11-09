@@ -54,6 +54,31 @@ importers:
         specifier: workspace:*
         version: link:../../packages/execution
 
+  apps/cli:
+    dependencies:
+      "@dip/authority":
+        specifier: workspace:*
+        version: link:../../packages/authority
+      "@dip/authorization":
+        specifier: workspace:*
+        version: link:../../packages/authorization
+      "@dip/conformance":
+        specifier: workspace:*
+        version: link:../../packages/conformance
+      "@dip/crypto":
+        specifier: workspace:*
+        version: link:../../packages/crypto
+      "@dip/verifier":
+        specifier: workspace:*
+        version: link:../../packages/verifier
+    devDependencies:
+      "@dip/api":
+        specifier: workspace:*
+        version: link:../api
+      "@dip/sdk":
+        specifier: workspace:*
+        version: link:../../packages/sdk
+
   examples:
     dependencies:
       "@dip/sdk":
