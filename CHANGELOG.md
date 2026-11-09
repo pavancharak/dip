@@ -23,6 +23,7 @@
 - Server can store state in PostgreSQL through `storage.postgresUrlPath` (secret file). A failed write stops the server instead of answering. Covered by `apps/api/test/persistence.test.ts` and the CI postgres job.
 - Server signs with AWS KMS keys when `engine.kmsKeyId` / `evidenceSigner.kmsKeyId` and `kms.region` are set. It refuses to start unless each KMS public key matches its pinned trust root.
 - Signing is async throughout (`evaluate`, `authorize`, `record`, evidence creation and ledger appends). Ledger appends and `record` calls are serialized so concurrent requests cannot fork the chain.
+- Rate limits are shared across API processes when a database is configured (`dip_rate_limits`, `PostgresRateLimiter`). Without a database they remain per process.
 - `@dip/kms`: AWS KMS signing provider (Ed25519, `RAW` messages) behind an injected transport, with typed errors that do not echo SDK messages. Tested with a fake transport; live sandbox tests are pending.
 - `@dip/evidence`: evidence envelope with separate authorization and execution sections, enforced invariants, Ed25519 signatures.
 - `@dip/ledger`: append-only hash-chained evidence ledger and standalone chain verifier with head anchoring.

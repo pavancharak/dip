@@ -65,6 +65,14 @@ CREATE OR REPLACE TRIGGER dip_event_log_no_truncate BEFORE TRUNCATE ON dip_event
 
 CREATE OR REPLACE TRIGGER authority_revocations_no_truncate BEFORE TRUNCATE ON authority_revocations
   FOR EACH STATEMENT EXECUTE FUNCTION dip_reject_mutation();
+-- Shared request counters for rate limiting. One row per bucket. A bucket's window
+-- starts at window_start (milliseconds). Created with IF NOT EXISTS, so it is additive.
+CREATE TABLE IF NOT EXISTS dip_rate_limits (
+  bucket text PRIMARY KEY,
+  window_start bigint NOT NULL,
+  count integer NOT NULL
+);
+
 `;
 
 /** Applies the schema. Idempotent: safe to run on every start. Returns the schema version. */

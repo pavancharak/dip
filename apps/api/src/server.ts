@@ -8,6 +8,7 @@ import {
   migrate,
   openDatabase,
   openPostgres,
+  PostgresRateLimiter,
   type SqlDatabase,
 } from "@dip/storage";
 import { resolveSigner, SignerError } from "./signers.js";
@@ -71,6 +72,8 @@ async function main(): Promise<void> {
     client,
     principals: config.principals,
     rateLimit: config.rateLimit,
+    // With a database, counters are shared by every process that uses it.
+    ...(db === null ? {} : { rateLimiter: new PostgresRateLimiter(db, config.rateLimit.windowMs) }),
     clockMs: () => Date.now(),
     onPersistenceFailure: (err) => {
       // A response is never sent for a change that was not written. Stop rather than

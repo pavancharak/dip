@@ -1,5 +1,6 @@
 import { DipError } from "@dip/authority";
 import type { DipClient } from "@dip/sdk";
+import { memoryRateLimiter, type RateLimiter } from "./rate-limit.js";
 
 /**
  * Versioned REST API over DipClient. Handlers are pure request → response
@@ -33,6 +34,8 @@ export interface ApiConfig {
   readonly principals: ReadonlyMap<string, Principal>;
   readonly rateLimit: { readonly max: number; readonly windowMs: number };
   readonly clockMs: () => number;
+  /** Shared limiter (for example PostgreSQL-backed). Defaults to an in-process limiter. */
+  readonly rateLimiter?: RateLimiter;
   /** Called when changes cannot be written. The server should stop; see server.ts. */
   readonly onPersistenceFailure?: (err: unknown) => void;
 }
@@ -88,7 +91,7 @@ export function createApi(config: ApiConfig): {
   describeRoutes(): RouteInfo[];
 } {
   const client = config.client;
-  const counters = new Map<string, { windowStart: number; count: number }>();
+  const limiter: RateLimiter = config.rateLimiter ?? memoryRateLimiter(config.rateLimit.windowMs);
 
   const routes: Route[] = [
     {
@@ -308,15 +311,9 @@ export function createApi(config: ApiConfig): {
     return pathMatched ? "METHOD" : null;
   }
 
-  function rateLimited(name: string): boolean {
-    const now = config.clockMs();
-    const entry = counters.get(name);
-    if (!entry || now - entry.windowStart >= config.rateLimit.windowMs) {
-      counters.set(name, { windowStart: now, count: 1 });
-      return false;
-    }
-    entry.count += 1;
-    return entry.count > config.rateLimit.max;
+  async function rateLimited(name: string): Promise<boolean> {
+    const count = await limiter.consume(name, config.clockMs());
+    return count > config.rateLimit.max;
   }
 
   return {
@@ -345,7 +342,7 @@ export function createApi(config: ApiConfig): {
           const found = config.principals.get(key);
           if (!found) return error(401, "UNAUTHORIZED", "missing or invalid API key");
           principal = found;
-          if (rateLimited(found.name)) return error(429, "RATE_LIMITED", "too many requests");
+          if (await rateLimited(found.name)) return error(429, "RATE_LIMITED", "too many requests");
           if (route.scope !== undefined && !principal.scopes.includes(route.scope)) {
             return error(403, "FORBIDDEN", `scope ${route.scope} required`);
           }

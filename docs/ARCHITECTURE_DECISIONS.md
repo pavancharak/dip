@@ -97,6 +97,6 @@ Options considered:
 3. **Batch signing.** One KMS signature covers a batch of entries, with a Merkle root per batch. It raises throughput without sharding, but it changes the evidence format and needs its own specification and conformance vectors. Not chosen until the format work is scheduled.
 4. **Multiple writers on one chain with leader election.** Rejected. It adds failover complexity to a chain that must stay strictly ordered.
 
-Scaling out the API tier (more processes) is safe only for authorization. Rate limits are per process today, so a limit enforced across processes needs a shared store; this is not built.
+Scaling out the API tier (more processes) is safe for authorization and for rate limits when a database is configured. Rate-limit counters live in PostgreSQL and are updated with one atomic upsert per request, so a limit holds across processes (`PostgresRateLimiter`, table `dip_rate_limits`). Without a database, limits are per process.
 
 Revisit when: recorded entries per ledger approach 20 per second sustained, or when a tenant's evidence volume needs a separate retention or isolation boundary.
