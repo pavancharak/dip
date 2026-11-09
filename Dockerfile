@@ -3,6 +3,8 @@
 # keys and API keys are mounted at runtime (see docker-compose.yml and docs/deployment).
 
 FROM node:22-bookworm-slim AS build
+# CI=true lets pnpm prune without a TTY; Docker builds have none.
+ENV CI=true
 RUN corepack enable
 WORKDIR /app
 COPY . .
