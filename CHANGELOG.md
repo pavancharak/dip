@@ -42,6 +42,11 @@
 - Runnable examples (`examples/run.mjs`), server entry point with fail-closed configuration, key generator, Dockerfile, Compose file, and deployment documentation.
 - CI jobs for examples, Docker image build, and production dependency audit.
 
+### Fixed
+
+- Removed five empty placeholder packages, including a duplicate `@dip/api` name.
+- Removed a stale matrix row that contradicted the split API rows.
+
 ### Notes
 
 - No approval workflow, execution boundary, evidence, ledger, verifier, SDK, CLI, API or connectors yet.

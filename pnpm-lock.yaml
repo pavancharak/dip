@@ -57,8 +57,6 @@ importers:
         specifier: workspace:*
         version: link:../packages/sdk
 
-  packages/api: {}
-
   packages/approval:
     dependencies:
       "@dip/authority":
@@ -85,10 +83,6 @@ importers:
       "@dip/crypto":
         specifier: workspace:*
         version: link:../crypto
-
-  packages/authz: {}
-
-  packages/cli: {}
 
   packages/conformance:
     dependencies:
@@ -145,8 +139,6 @@ importers:
       "@dip/ledger":
         specifier: workspace:*
         version: link:../ledger
-
-  packages/core: {}
 
   packages/crypto: {}
 
@@ -221,8 +213,6 @@ importers:
       "@dip/verifier":
         specifier: workspace:*
         version: link:../verifier
-
-  packages/spec: {}
 
   packages/verifier:
     dependencies:

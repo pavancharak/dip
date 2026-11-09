@@ -1,6 +1,6 @@
 # Build Status
 
-Last updated: 2026-11-09. Phase 2 is on `main`; Phases 2 and 3 are merged; Phase 10 is on branch `phase10-deploy`.
+Last updated: 2026-11-09. Phase 2 is on `main`; Phases 2 and 3 are merged; Phase 11 is on branch `phase11-audit`.
 
 ## Phase report
 
@@ -102,7 +102,12 @@ Not done: a persistent store (registry is in memory); approval-required paths be
 - Documentation: `docs/deployment/README.md` covers installation, keys, configuration, running, independent verification, key rotation, and limits. `ENVIRONMENT.md` lists every variable and field.
 - Not done: durable storage, migrations, backups and recovery, a release workflow that publishes anything (packages are private), and operations monitoring.
 
-### Phase 11: NOT STARTED
+### Phase 11: Independent release audit (completed; verdict: not ready for production)
+
+- Full report: `docs/RELEASE-AUDIT.md`. Against the 26 Definition of Done items: 16 met, 5 partly met, 2 not met (the specification, and the `dip` CLI), and item 21 met only for self-generated fixtures.
+- Checks run and passing: the two-outcome rule, nondeterminism in protocol logic, floating-point money, forbidden claim phrases, secrets in tracked files, matrix traceability, examples, and the full gate.
+- Defects found and fixed: two packages named `@dip/api` (an empty placeholder and the real API); five empty placeholder packages removed; a stale matrix row contradicting its split rows.
+- Open blockers before any release: durable storage, the `dip` CLI, OpenAPI, the full specification and threat model, pluggable key management with a KMS adapter, an independent conformance run, an external security review, the patent-risk review, and live connector verification.
 
 Approval workflow, execution control, evidence, ledger, independent verifier, SDK, CLI, REST API, connectors, conformance suite, adversarial tests, deployment and release audit are not started.
 
