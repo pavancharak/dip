@@ -27,3 +27,4 @@ export {
   type SignedRevocation,
 } from "./signing.js";
 export { AuthorityRegistry } from "./registry.js";
+export type { Journal } from "./journal.js";

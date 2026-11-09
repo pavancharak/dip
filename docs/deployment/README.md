@@ -69,7 +69,9 @@ Exit codes: `0` VALID, `1` INVALID, `2` INCOMPLETE or UNVERIFIABLE, `3` usage or
 
 **Revocation.** Authorities are revoked with a signed revocation. A revoked authority stops execution at once, including for decisions made earlier.
 
-**Backups and recovery: not available.** State is held in memory. A restart discards authorities, approvals and evidence. Do not rely on this deployment for records you must keep. Durable storage is a required next step before production use.
+**Durable state.** With `storage.dataDir` set, the server keeps every change in a PostgreSQL event log (PGlite, file-backed). It replays that log at startup and refuses to start if the stored evidence chain does not verify. Every response is sent only after its changes are written. Without `storage.dataDir`, state is held in memory and a restart discards everything.
+
+**Backups and recovery: not automated.** Back up the data directory while the server is stopped (or use a consistent copy), and test a restore. After a restore, check the ledger head against the head you recorded outside the system.
 
 **Connectors: none configured.** The server starts with no connectors, so every execution is refused with `CONNECTOR_NOT_FOUND`. Connectors are wired in code. The included adapters use placeholder endpoints.
 
@@ -79,7 +81,9 @@ DIP follows semantic versioning from `0.0.0`. Packages are `private` and are not
 
 ## Limits
 
-- No durable storage, backups, or recovery.
+- Backups and recovery are not automated, and no retention policy is implemented.
+- The data directory may be opened by one process at a time.
+- No `node-postgres` adapter yet: the server uses PGlite, which is file-backed PostgreSQL 16.
 - No tenant-scoped ledger. Ledger reads are admin-only and show all tenants.
 - API keys are supplied as files. There is no key-management integration.
 - No live vendor integrations have been verified.

@@ -1,3 +1,4 @@
+import type { Journal } from "@dip/authority";
 import {
   AuthorityRegistry,
   DipError,
@@ -44,6 +45,8 @@ export interface DipClientConfig {
   readonly now: () => Date;
   readonly maxDecisionAgeSeconds?: number;
   readonly executionTimeoutMs?: number;
+  /** Durable event log. When present, changes are written before the request is answered. */
+  readonly eventLog?: EventSink;
 }
 
 export interface AuthorizationOutcome {
@@ -73,7 +76,21 @@ function secondsIso(d: Date): string {
  * Developer-facing client. Authorization returns only ALLOW or DENY. Approval
  * states are returned only from approval methods, and approvals never authorize.
  */
+/** One journaled change: a kind and its payload. */
+export interface JournalRecord {
+  readonly kind: string;
+  readonly payload: unknown;
+}
+
+/** Durable, append-only storage for journal records. */
+export interface EventSink {
+  readAll(): Promise<JournalRecord[]>;
+  append(records: readonly JournalRecord[]): Promise<void>;
+}
+
 export class DipClient {
+  private readonly pending: JournalRecord[] = [];
+  private readonly journal: Journal | undefined;
   private readonly trust = new TrustRootSet();
   private readonly registry: AuthorityRegistry;
   private readonly approvals: ApprovalStore;
@@ -85,8 +102,13 @@ export class DipClient {
 
   constructor(private readonly config: DipClientConfig) {
     for (const root of config.trustRoots) this.trust.add(root);
-    this.registry = new AuthorityRegistry(this.trust);
-    this.approvals = new ApprovalStore(this.trust);
+    this.journal = config.eventLog
+      ? (kind: string, payload: unknown) => {
+          this.pending.push({ kind, payload });
+        }
+      : undefined;
+    this.registry = new AuthorityRegistry(this.trust, this.journal);
+    this.approvals = new ApprovalStore(this.trust, this.journal);
     this.ctx = {
       registry: this.registry,
       now: config.now,
@@ -99,6 +121,7 @@ export class DipClient {
       now: config.now,
       maxDecisionAgeSeconds: config.maxDecisionAgeSeconds ?? 300,
       timeoutMs: config.executionTimeoutMs ?? 5000,
+      journal: this.journal,
       authorityRecheck: (request) => {
         // Re-authorize against current authority state. A revoked, expired or superseded
         // authority stops execution even when the original decision was ALLOW.
@@ -123,10 +146,14 @@ export class DipClient {
           config.now(),
         ),
     });
-    this.ledger = new EvidenceLedger(this.trust, {
-      keyId: config.evidenceSigner.keyId,
-      privateKey: config.evidenceSigner.privateKey,
-    });
+    this.ledger = new EvidenceLedger(
+      this.trust,
+      {
+        keyId: config.evidenceSigner.keyId,
+        privateKey: config.evidenceSigner.privateKey,
+      },
+      this.journal,
+    );
   }
 
   // Authority declarations
@@ -205,6 +232,7 @@ export class DipClient {
     const sequence = this.ledger.size() + 1;
     const evidenceId = `ev-${String(sequence).padStart(8, "0")}`;
     this.evidenceTenants.set(evidenceId, input.normalized.request.tenantId);
+    this.journal?.("evidence.tenant", { evidenceId, tenantId: input.normalized.request.tenantId });
     return this.ledger.append(
       draftFrom({
         evidenceId,
@@ -244,6 +272,71 @@ export class DipClient {
 
   ledgerHead(): string {
     return this.ledger.head();
+  }
+
+  /**
+   * Opens a client. With an event log, it replays every journaled change and refuses
+   * to start if the restored evidence chain does not verify.
+   */
+  static async open(config: DipClientConfig): Promise<DipClient> {
+    const client = new DipClient(config);
+    if (config.eventLog !== undefined) {
+      for (const record of await config.eventLog.readAll()) client.applyRecord(record);
+      if (!client.verifyLedger(client.ledgerHead()).valid) {
+        throw new DipError(
+          "LEDGER_INVALID_ON_OPEN",
+          "restored evidence chain does not verify; refusing to start",
+        );
+      }
+    }
+    return client;
+  }
+
+  /** Applies one journaled change without re-journaling it. */
+  applyRecord(record: JournalRecord): void {
+    const p = record.payload;
+    switch (record.kind) {
+      case "authority.published":
+        this.registry.restorePublished(p);
+        return;
+      case "authority.revoked":
+        this.registry.restoreRevoked(p);
+        return;
+      case "approval.requested":
+        this.approvals.restoreRequested(p);
+        return;
+      case "approval.decided":
+        this.approvals.restoreDecided(p);
+        return;
+      case "execution.attempt":
+        this.boundary.restoreAttempt(p as ExecutionAttempt);
+        return;
+      case "execution.consumed":
+        this.boundary.restoreConsumed((p as { decisionId: string }).decisionId);
+        return;
+      case "execution.completed": {
+        const c = p as { key: string; digest: string; externalRef: string };
+        this.boundary.restoreCompleted(c.key, c.digest, c.externalRef);
+        return;
+      }
+      case "evidence.appended":
+        this.ledger.restoreLine(String(p));
+        return;
+      case "evidence.tenant": {
+        const t = p as { evidenceId: string; tenantId: string };
+        this.evidenceTenants.set(t.evidenceId, t.tenantId);
+        return;
+      }
+      default:
+        throw new DipError("UNKNOWN_JOURNAL_RECORD", `unknown journal record kind ${record.kind}`);
+    }
+  }
+
+  /** Writes pending changes to the event log. Must succeed before a response is returned. */
+  async flush(): Promise<void> {
+    if (this.config.eventLog === undefined || this.pending.length === 0) return;
+    const batch = this.pending.splice(0);
+    await this.config.eventLog.append(batch);
   }
 
   verifyLedger(expectedHead?: string): VerificationReport {

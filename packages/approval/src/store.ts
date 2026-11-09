@@ -1,3 +1,4 @@
+import type { Journal } from "@dip/authority";
 import { canonicalize, signWithDomain, verifyWithDomain } from "@dip/crypto";
 import { DipError, exactKeys, id, obj, time, type TrustRootSet } from "@dip/authority";
 import type { KeyObject } from "node:crypto";
@@ -115,7 +116,7 @@ export function parseApprovalBinding(input: unknown): ApprovalBinding {
   };
 }
 
-function parseDecision(input: unknown): SignedApprovalDecision {
+export function parseDecision(input: unknown): SignedApprovalDecision {
   const o = obj(input, "approvalDecision");
   exactKeys(o, ["body", "signature"], "approvalDecision");
   if (typeof o.signature !== "string") {
@@ -154,7 +155,38 @@ export function signApprovalDecision(
 export class ApprovalStore {
   private readonly records = new Map<string, StoredApproval>();
 
-  constructor(private readonly trust: TrustRootSet) {}
+  private replaying = false;
+
+  constructor(
+    private readonly trust: TrustRootSet,
+    private readonly journal?: Journal,
+  ) {}
+
+  private emit(kind: string, payload: unknown): void {
+    if (!this.replaying) this.journal?.(kind, payload);
+  }
+
+  /** Re-applies a journaled request. Validated against the request time it recorded. */
+  restoreRequested(input: unknown): void {
+    const binding = parseApprovalBinding(input);
+    this.replaying = true;
+    try {
+      this.request(binding, new Date(binding.requestedAt));
+    } finally {
+      this.replaying = false;
+    }
+  }
+
+  /** Re-applies a journaled decision at the time it was made. */
+  restoreDecided(input: unknown): void {
+    const signed = parseDecision(input);
+    this.replaying = true;
+    try {
+      this.decide(signed, new Date(signed.body.decidedAt));
+    } finally {
+      this.replaying = false;
+    }
+  }
 
   request(input: unknown, now: Date): ApprovalBinding {
     const binding = parseApprovalBinding(input);
@@ -177,6 +209,7 @@ export class ApprovalStore {
       state: "PENDING",
       events: [{ action: "REQUEST", at: binding.requestedAt, stateAfter: "PENDING" }],
     });
+    this.emit("approval.requested", binding);
     return binding;
   }
 
@@ -249,6 +282,7 @@ export class ApprovalStore {
 
     rec.state = next;
     rec.events.push({ action, at: isoSeconds(nowMs), stateAfter: next });
+    this.emit("approval.decided", signed);
     return next;
   }
 

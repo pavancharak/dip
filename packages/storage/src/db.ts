@@ -13,6 +13,8 @@ export interface SqlQueryable {
 export interface SqlDatabase extends SqlQueryable {
   exec(text: string): Promise<unknown>;
   transaction<T>(fn: (tx: SqlQueryable) => Promise<T>): Promise<T>;
+  /** Releases the database. File-backed databases must be closed before another process opens them. */
+  close?(): Promise<void>;
 }
 
 /** SQLSTATE for unique_violation. */

@@ -1,5 +1,6 @@
 {
   "port": 3000,
+  "storage": { "dataDir": "/var/lib/dip/data" },
   "maxDecisionAgeSeconds": 300,
   "executionTimeoutMs": 5000,
   "rateLimit": { "max": 600, "windowMs": 60000 },

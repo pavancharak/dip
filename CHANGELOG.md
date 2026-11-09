@@ -45,6 +45,8 @@
 - `@dip/storage`: PostgreSQL evidence ledger and authority registry with append-only triggers, serialized appends, and migrations. Tested on PGlite.
 - `infrastructure/postgres/README.md`: operations, least privilege, tamper-evidence limits, and recovery.
 
+- Server wired to durable storage: a journal of state changes in PostgreSQL, replayed at startup, with responses returned only after their changes are written.
+
 ### Notes
 
 - No approval workflow, execution boundary, evidence, ledger, verifier, SDK, CLI, API or connectors yet.

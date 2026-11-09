@@ -46,3 +46,4 @@ Statuses: NOT_STARTED, IN_PROGRESS, IMPLEMENTED, VERIFIED, BLOCKED. IMPLEMENTED 
 | D-04 | Executable examples reproduced on a clean install | master Phase 10 acceptance | examples/run.mjs | `node examples/run.mjs` (CI job `examples`) | VERIFIED: 4/4 pass locally |
 | D-05 | CI jobs for examples, image build, and production dependency audit | master §17 | .github/workflows/ci.yml | CI | IMPLEMENTED: the new checks have not yet run on GitHub |
 | D-06 | Database schema, migrations, backups, recovery | master §12 | none | none | NOT_STARTED: state is in memory |
+| D-07 | Server wired to durable storage; responses returned only after their changes are written | master §12 | apps/api/src/app.ts (flush in finally), apps/api/src/server.ts | apps/api/test/durable.test.ts | VERIFIED (file-backed PGlite) |

@@ -1,3 +1,4 @@
+import type { Journal } from "./journal.js";
 import { canonicalize } from "@dip/crypto";
 import { parseAuthorityBody } from "./body.js";
 import {
@@ -20,7 +21,36 @@ export class AuthorityRegistry {
   private readonly versions = new Map<string, string[]>();
   private readonly revocations = new Map<string, string>();
 
-  constructor(private readonly trust: TrustRootSet) {}
+  private replaying = false;
+
+  constructor(
+    private readonly trust: TrustRootSet,
+    private readonly journal?: Journal,
+  ) {}
+
+  private emit(kind: string, payload: unknown): void {
+    if (!this.replaying) this.journal?.(kind, payload);
+  }
+
+  /** Re-applies a journaled publication. Validation repeats; nothing is journaled again. */
+  restorePublished(input: unknown): void {
+    this.replaying = true;
+    try {
+      this.publish(input);
+    } finally {
+      this.replaying = false;
+    }
+  }
+
+  /** Re-applies a journaled revocation. Validation repeats; nothing is journaled again. */
+  restoreRevoked(input: unknown): void {
+    this.replaying = true;
+    try {
+      this.revoke(input);
+    } finally {
+      this.replaying = false;
+    }
+  }
 
   publish(input: unknown): SignedAuthority {
     const o = obj(input, "signedAuthority");
@@ -49,6 +79,7 @@ export class AuthorityRegistry {
       );
     }
     list.push(canonicalize(signed));
+    this.emit("authority.published", signed);
     this.versions.set(authorityId, list);
     return JSON.parse(canonicalize(signed)) as SignedAuthority;
   }
@@ -84,6 +115,7 @@ export class AuthorityRegistry {
       throw new DipError("AUTHORITY_ALREADY_REVOKED", `${key} is already revoked`);
     }
     this.revocations.set(key, canonicalize(signed));
+    this.emit("authority.revoked", signed);
     return signed;
   }
 

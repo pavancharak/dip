@@ -37,6 +37,9 @@ importers:
       "@dip/sdk":
         specifier: workspace:*
         version: link:../../packages/sdk
+      "@dip/storage":
+        specifier: workspace:*
+        version: link:../../packages/storage
     devDependencies:
       "@dip/approval":
         specifier: workspace:*
@@ -238,7 +241,6 @@ importers:
       "@dip/ledger":
         specifier: workspace:*
         version: link:../ledger
-    devDependencies:
       "@electric-sql/pglite":
         specifier: 0.2.17
         version: 0.2.17

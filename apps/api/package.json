@@ -14,7 +14,8 @@
   },
   "dependencies": {
     "@dip/authority": "workspace:*",
-    "@dip/sdk": "workspace:*"
+    "@dip/sdk": "workspace:*",
+    "@dip/storage": "workspace:*"
   },
   "devDependencies": {
     "@dip/approval": "workspace:*",
