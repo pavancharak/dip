@@ -32,13 +32,15 @@ function draft(id: string): EvidenceDraft {
 
 describe.skipIf(url === undefined)("node-postgres adapter (real server)", () => {
   it("migrates, appends a verifiable chain, rejects duplicates, and blocks mutation", async () => {
-    // One connection, so the session search_path set below applies to every query.
-    const db = openPostgres(url ?? "", 1);
+    // A fresh database per run. No session settings (such as search_path) are needed,
+    // so every pooled connection sees the same schema.
+    const admin = openPostgres(url ?? "", 1);
+    const name = `dip_test_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    await admin.query(`CREATE DATABASE "${name}"`);
+    const target = new URL(url ?? "");
+    target.pathname = `/${name}`;
+    const db = openPostgres(target.toString(), 2);
     try {
-      // A fresh schema per run, so repeated runs against one server do not interfere.
-      const schema = `dip_test_${Date.now().toString(36)}`;
-      await db.exec(`CREATE SCHEMA ${schema}; SET search_path TO ${schema};`);
-      await db.exec(`SET search_path TO ${schema}`);
       await migrate(db);
       const evidence = generateSigningKeyPair();
       const trust = new TrustRootSet();
@@ -66,9 +68,10 @@ describe.skipIf(url === undefined)("node-postgres adapter (real server)", () => 
         { kind: "evidence.tenant", payload: { evidenceId: "ev-1", tenantId: "tenant-1" } },
       ]);
       expect((await log.readAll()).map((r) => r.kind)).toEqual(["evidence.tenant"]);
-      await db.exec(`DROP SCHEMA ${schema} CASCADE`);
     } finally {
       await db.close?.();
+      await admin.query(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`);
+      await admin.close?.();
     }
   });
 });
