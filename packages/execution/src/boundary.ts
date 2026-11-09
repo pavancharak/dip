@@ -1,3 +1,4 @@
+import type { Journal } from "@dip/authority";
 import { canonicalize, verifyWithDomain } from "@dip/crypto";
 import type { TrustRootSet } from "@dip/authority";
 import {
@@ -55,6 +56,8 @@ export interface BoundaryOptions {
   readonly approvalRecheck?: (request: RequestBody) => string | null;
   /** Re-checks that the authority is still in good standing at execution time. Returns a reason code, or null. */
   readonly authorityRecheck?: (request: RequestBody) => string | null;
+  /** Receives each committed change (attempts, consumed decisions, completions) for durable logging. */
+  readonly journal?: Journal | undefined;
 }
 
 interface KnownKey {
@@ -112,6 +115,19 @@ export class ExecutionBoundary {
 
   constructor(private readonly options: BoundaryOptions) {}
 
+  /** Restore paths: re-apply journaled state without executing anything or journaling again. */
+  restoreAttempt(attempt: ExecutionAttempt): void {
+    this.log.push(attempt);
+  }
+
+  restoreConsumed(decisionId: string): void {
+    this.consumed.add(decisionId);
+  }
+
+  restoreCompleted(key: string, digest: string, externalRef: string): void {
+    this.completed.set(key, { digest, externalRef });
+  }
+
   attempts(): readonly ExecutionAttempt[] {
     return [...this.log];
   }
@@ -139,6 +155,7 @@ export class ExecutionBoundary {
       at: this.options.now().toISOString(),
     };
     this.log.push(attempt);
+    this.options.journal?.("execution.attempt", attempt);
     return attempt;
   }
 
@@ -256,6 +273,7 @@ export class ExecutionBoundary {
 
     // 10. Execution. The decision is consumed before the connector runs.
     this.consumed.add(decisionId);
+    this.options.journal?.("execution.consumed", { decisionId });
     this.inFlight.add(key);
     this.record("STARTED", {
       decisionId,
@@ -280,6 +298,11 @@ export class ExecutionBoundary {
       const result = outcome.value;
       if (result.status === "SUCCEEDED") {
         this.completed.set(key, { digest: requestDigest, externalRef: result.externalRef });
+        this.options.journal?.("execution.completed", {
+          key,
+          digest: requestDigest,
+          externalRef: result.externalRef,
+        });
         return this.record("SUCCEEDED", {
           decisionId,
           digest: requestDigest,

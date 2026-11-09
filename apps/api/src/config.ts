@@ -26,6 +26,8 @@ export interface ServerConfig {
   readonly engine: { readonly keyId: string; readonly privateKey: KeyObject };
   readonly evidenceSigner: { readonly keyId: string; readonly privateKey: KeyObject };
   readonly principals: ReadonlyMap<string, Principal>;
+  /** Directory for the durable database, or null to run in memory only. */
+  readonly dataDir: string | null;
 }
 
 type Obj = Record<string, unknown>;
@@ -128,7 +130,9 @@ export function loadConfig(raw: unknown, readFile: (path: string) => string): Se
 
   const rate =
     c.rateLimit === undefined ? { max: 600, windowMs: 60_000 } : obj(c.rateLimit, "rateLimit");
+  const storage = c.storage === undefined ? null : obj(c.storage, "storage");
   return {
+    dataDir: storage === null ? null : text(storage.dataDir, "storage.dataDir"),
     port: c.port === undefined ? 3000 : int(c.port, "port", 1, 65535),
     maxDecisionAgeSeconds:
       c.maxDecisionAgeSeconds === undefined

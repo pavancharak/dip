@@ -3,13 +3,14 @@ import { createApi } from "./app.js";
 import { loadConfig, ConfigError } from "./config.js";
 import { createHttpServer } from "./http.js";
 import { DipClient } from "@dip/sdk";
+import { PostgresEventLog, migrate, openDatabase } from "@dip/storage";
 
 /**
  * Entry point. Reads DIP_CONFIG (default /run/secrets/dip-config.json).
  * Connectors are not configured by default, so execution refuses with
  * CONNECTOR_NOT_FOUND until connectors are wired in code.
  */
-function main(): void {
+async function main(): Promise<void> {
   const configPath = process.env.DIP_CONFIG ?? "/run/secrets/dip-config.json";
   let config;
   try {
@@ -24,7 +25,9 @@ function main(): void {
     return;
   }
 
-  const client = new DipClient({
+  const db = config.dataDir === null ? null : await openDatabase(config.dataDir);
+  if (db !== null) await migrate(db);
+  const client = await DipClient.open({
     trustRoots: config.trustRoots,
     engine: config.engine,
     evidenceSigner: config.evidenceSigner,
@@ -32,6 +35,7 @@ function main(): void {
     now: () => new Date(),
     maxDecisionAgeSeconds: config.maxDecisionAgeSeconds,
     executionTimeoutMs: config.executionTimeoutMs,
+    ...(db === null ? {} : { eventLog: new PostgresEventLog(db) }),
   });
   const api = createApi({
     client,
@@ -42,9 +46,13 @@ function main(): void {
   const server = createHttpServer((req) => api.handle(req));
   server.listen(config.port, () => {
     process.stdout.write(`dip-api listening on ${String(config.port)}\n`);
-    process.stdout.write(
-      "warning: state is held in memory; a restart discards authorities, approvals and evidence\n",
-    );
+    if (config.dataDir === null) {
+      process.stdout.write(
+        "warning: state is held in memory; a restart discards authorities, approvals and evidence\n",
+      );
+    } else {
+      process.stdout.write(`state is durable in ${config.dataDir}\n`);
+    }
     process.stdout.write(
       "warning: no connectors are configured; execution refuses with CONNECTOR_NOT_FOUND\n",
     );
@@ -56,4 +64,8 @@ function main(): void {
   process.on("SIGINT", shutdown);
 }
 
-main();
+main().catch((err: unknown) => {
+  const message = err instanceof Error ? err.message : "unknown error";
+  process.stderr.write(`dip-api: startup failed: ${message}\n`);
+  process.exitCode = 1;
+});

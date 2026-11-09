@@ -12,17 +12,18 @@ No other variables are read. Secrets are never read from the environment, so the
 
 ## Configuration file
 
-| Field                   | Required   | Meaning                                                                                                            |
-| ----------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------ |
-| `port`                  | no (3000)  | Listen port, 1 to 65535.                                                                                           |
-| `maxDecisionAgeSeconds` | no (300)   | A decision older than this cannot execute.                                                                         |
-| `executionTimeoutMs`    | no (5000)  | Connector time limit before the attempt is recorded as TIMED_OUT.                                                  |
-| `rateLimit.max`         | no (600)   | Requests per principal per window.                                                                                 |
-| `rateLimit.windowMs`    | no (60000) | Window length in milliseconds.                                                                                     |
-| `trustRoots[]`          | yes        | Public keys: `keyId`, `jwk` (Ed25519 OKP), `status` (`ACTIVE` or `REVOKED`). At least one.                         |
-| `engine`                | yes        | `keyId` and `privateKeyPath` for the decision-signing key.                                                         |
-| `evidenceSigner`        | yes        | `keyId` and `privateKeyPath` for the evidence-signing key.                                                         |
-| `principals[]`          | yes        | `name`, `tenantId` (string, or null for cross-tenant), `scopes` (`admin`, `approver`), `apiKeyPath`. At least one. |
+| Field                   | Required                | Meaning                                                                                                            |
+| ----------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `port`                  | no (3000)               | Listen port, 1 to 65535.                                                                                           |
+| `maxDecisionAgeSeconds` | no (300)                | A decision older than this cannot execute.                                                                         |
+| `executionTimeoutMs`    | no (5000)               | Connector time limit before the attempt is recorded as TIMED_OUT.                                                  |
+| `storage.dataDir`       | no (absent = in memory) | Directory for the durable PostgreSQL data. Only one process may open it at a time.                                 |
+| `rateLimit.max`         | no (600)                | Requests per principal per window.                                                                                 |
+| `rateLimit.windowMs`    | no (60000)              | Window length in milliseconds.                                                                                     |
+| `trustRoots[]`          | yes                     | Public keys: `keyId`, `jwk` (Ed25519 OKP), `status` (`ACTIVE` or `REVOKED`). At least one.                         |
+| `engine`                | yes                     | `keyId` and `privateKeyPath` for the decision-signing key.                                                         |
+| `evidenceSigner`        | yes                     | `keyId` and `privateKeyPath` for the evidence-signing key.                                                         |
+| `principals[]`          | yes                     | `name`, `tenantId` (string, or null for cross-tenant), `scopes` (`admin`, `approver`), `apiKeyPath`. At least one. |
 
 ## Error codes at startup
 

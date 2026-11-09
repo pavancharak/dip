@@ -21,6 +21,8 @@ COPY --from=build --chown=node:node /app/package.json ./package.json
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/packages ./packages
 COPY --from=build --chown=node:node /app/apps ./apps
+RUN mkdir -p /var/lib/dip && chown node:node /var/lib/dip
+VOLUME ["/var/lib/dip"]
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

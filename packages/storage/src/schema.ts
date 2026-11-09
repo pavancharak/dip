@@ -4,7 +4,7 @@
  * It does not stop a database superuser, so the hash chain and signatures remain
  * the tamper evidence. The verifier detects a superuser edit that disables the triggers.
  */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 export const SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS dip_schema_migrations (
@@ -34,6 +34,12 @@ CREATE TABLE IF NOT EXISTS authority_revocations (
   PRIMARY KEY (authority_id, version)
 );
 
+CREATE TABLE IF NOT EXISTS dip_event_log (
+  seq bigserial PRIMARY KEY,
+  kind text NOT NULL CHECK (length(kind) BETWEEN 1 AND 64),
+  payload text NOT NULL
+);
+
 CREATE OR REPLACE FUNCTION dip_reject_mutation() RETURNS trigger AS $$
 BEGIN
   RAISE EXCEPTION 'DIP records are append-only: % on % is not allowed', TG_OP, TG_TABLE_NAME;
@@ -52,6 +58,11 @@ CREATE OR REPLACE TRIGGER authority_versions_no_truncate BEFORE TRUNCATE ON auth
 
 CREATE OR REPLACE TRIGGER authority_revocations_no_update BEFORE UPDATE OR DELETE ON authority_revocations
   FOR EACH ROW EXECUTE FUNCTION dip_reject_mutation();
+CREATE OR REPLACE TRIGGER dip_event_log_no_update BEFORE UPDATE OR DELETE ON dip_event_log
+  FOR EACH ROW EXECUTE FUNCTION dip_reject_mutation();
+CREATE OR REPLACE TRIGGER dip_event_log_no_truncate BEFORE TRUNCATE ON dip_event_log
+  FOR EACH STATEMENT EXECUTE FUNCTION dip_reject_mutation();
+
 CREATE OR REPLACE TRIGGER authority_revocations_no_truncate BEFORE TRUNCATE ON authority_revocations
   FOR EACH STATEMENT EXECUTE FUNCTION dip_reject_mutation();
 `;

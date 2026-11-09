@@ -334,12 +334,21 @@ export function createApi(config: ApiConfig): { handle(req: ApiRequest): Promise
         ) {
           return error(400, "INVALID_BODY", "a JSON body is required");
         }
-        return await route.handler({
-          params,
-          query: new URLSearchParams(queryString),
-          body,
-          principal,
-        });
+        // Changes made by the handler are written to the event log before the response
+        // is returned, even when the handler fails part-way: nothing is acknowledged
+        // unless it is durable, and nothing applied in memory is left unrecorded.
+        let response: ApiResponse;
+        try {
+          response = await route.handler({
+            params,
+            query: new URLSearchParams(queryString),
+            body,
+            principal,
+          });
+        } finally {
+          await config.client.flush();
+        }
+        return response;
       } catch (err) {
         if (err instanceof DipError) return mapDipError(err);
         return error(500, "INTERNAL_ERROR", "internal error");

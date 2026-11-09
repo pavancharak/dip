@@ -119,8 +119,8 @@ function ledger(e: Env = env): PostgresEvidenceLedger {
 
 describe("schema", () => {
   it("migration is idempotent", async () => {
-    expect(await migrate(env.db)).toBe(1);
-    expect(await migrate(env.db)).toBe(1);
+    expect(await migrate(env.db)).toBe(2);
+    expect(await migrate(env.db)).toBe(2);
     const rows = await env.db.query("SELECT count(*) AS n FROM dip_schema_migrations");
     expect(Number(rows.rows[0]?.n)).toBe(1);
   });

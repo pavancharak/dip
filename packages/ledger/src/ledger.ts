@@ -1,4 +1,4 @@
-import { DipError, type TrustRootSet } from "@dip/authority";
+import { DipError, type Journal, type TrustRootSet } from "@dip/authority";
 import { canonicalize } from "@dip/crypto";
 import type { NormalizedRequest, SignedDecision } from "@dip/authorization";
 import type { ExecutionAttempt } from "@dip/execution";
@@ -83,7 +83,16 @@ export class EvidenceLedger {
   constructor(
     private readonly trust: TrustRootSet,
     private readonly signer: Signer,
+    private readonly journal?: Journal,
   ) {}
+
+  /** Re-adds a journaled entry. The signature is checked at open time by verify(), not here. */
+  restoreLine(line: string): void {
+    const signed = parseSignedEvidence(JSON.parse(line));
+    this.lines.push(line);
+    this.ids.add(signed.body.evidenceId);
+    this.lastDigest = entryDigest(signed);
+  }
 
   append(draft: EvidenceDraft): SignedEvidence {
     if (this.ids.has(draft.evidenceId)) {
@@ -95,6 +104,7 @@ export class EvidenceLedger {
       this.signer,
     );
     this.lines.push(canonicalize(signed));
+    this.journal?.("evidence.appended", canonicalize(signed));
     this.ids.add(draft.evidenceId);
     this.lastDigest = entryDigest(signed);
     return signed;

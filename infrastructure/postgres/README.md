@@ -7,9 +7,11 @@ The schema lives in `packages/storage/src/schema.ts` and is applied with `migrat
 - `evidence_ledger`: every evidence record, as its canonical signed bytes, in chain order.
 - `authority_versions` and `authority_revocations`: published authority declarations and signed revocations.
 
-## What is not durable yet
+## What the server stores
 
-Approvals, execution attempts and the server's runtime wiring still use memory. The SDK and API do not yet use these stores, so a server restart still loses state. Wiring is the next step.
+The server keeps every state change in `dip_event_log`: authority publications and revocations, approval requests and decisions, consumed decisions, execution attempts and completions, evidence appends, and evidence tenant ownership. At startup it replays the log, verifies the evidence chain, and refuses to start if the chain does not verify.
+
+The typed tables above (`evidence_ledger`, `authority_versions`, `authority_revocations`) are used by the standalone stores. The server uses the event log instead, so the two paths hold the same kinds of data separately.
 
 ## Least privilege
 
@@ -27,4 +29,4 @@ Triggers stop ordinary application mistakes and accidental edits. A database own
 
 ## Drivers
 
-The stores depend only on the small `SqlDatabase` interface in `packages/storage/src/db.ts`. The tests use PGlite, which runs PostgreSQL 16 in-process. A `node-postgres` adapter is not yet written. It must be tested against a real server before use.
+The stores depend only on the small `SqlDatabase` interface in `packages/storage/src/db.ts`. The server and tests use PGlite, which runs PostgreSQL 16 in-process and can keep its data in a directory. A `node-postgres` adapter is not yet written. It must be tested against a real server before use.
