@@ -25,8 +25,8 @@ export interface KmsSignInput {
  * Keeping the SDK behind this seam means the protocol code never imports it.
  */
 export interface KmsTransport {
-  sign(input: KmsSignInput): Promise<{ Signature?: Uint8Array }>;
-  getPublicKey(input: { KeyId: string }): Promise<{ PublicKey?: Uint8Array }>;
+  sign(input: KmsSignInput): Promise<{ Signature?: Uint8Array | undefined }>;
+  getPublicKey(input: { KeyId: string }): Promise<{ PublicKey?: Uint8Array | undefined }>;
 }
 
 /**

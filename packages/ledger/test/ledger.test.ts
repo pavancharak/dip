@@ -139,7 +139,7 @@ async function pipeline(
   id: string,
   connector: Connector = okConnector(),
 ): Promise<ExecutionAttempt | null> {
-  const decision = evaluate(input, w.ctx);
+  const decision = await evaluate(input, w.ctx);
   let attempt: ExecutionAttempt | null = null;
   {
     const boundary = new ExecutionBoundary({
@@ -151,7 +151,7 @@ async function pipeline(
     });
     attempt = await boundary.execute(input, decision);
   }
-  w.ledger.append(
+  await w.ledger.append(
     draftFrom({
       evidenceId: id,
       transactionId: "txn-1",
@@ -199,7 +199,7 @@ describe("evidence and ledger pipeline", () => {
     const w = world();
     w.registry.publish(signAuthority(authorityBody(), w.issuer.privateKey));
     const input = req({ amount: { minor: PAISE_80K, currency: "INR" } });
-    const decision = evaluate(input, w.ctx);
+    const decision = await evaluate(input, w.ctx);
     const boundary = new ExecutionBoundary({
       trust: w.trust,
       connectors: new Map([["payment.create", okConnector()]]),
@@ -208,7 +208,7 @@ describe("evidence and ledger pipeline", () => {
       timeoutMs: 1000,
     });
     const attempt = await boundary.execute(input, decision);
-    w.ledger.append(
+    await w.ledger.append(
       draftFrom({
         evidenceId: "ev-ref",
         transactionId: "txn-1",
@@ -222,7 +222,7 @@ describe("evidence and ledger pipeline", () => {
     expect(w.ledger.verify().valid).toBe(true);
   });
 
-  it("refuses to create a SUCCEEDED execution for a DENY authorization", () => {
+  it("refuses to create a SUCCEEDED execution for a DENY authorization", async () => {
     const w = world();
     const body = {
       evidenceId: "ev-bad",
@@ -247,16 +247,16 @@ describe("evidence and ledger pipeline", () => {
         attemptedAt: "2026-06-01T12:00:00Z",
       },
     };
-    expect(() =>
+    await expect(
       createEvidence(
         body,
         { sequence: 1, previousDigest: GENESIS_DIGEST },
         { keyId: "evidence-1", privateKey: w.evidence.privateKey },
       ),
-    ).toThrow(DipError);
+    ).rejects.toThrow(DipError);
   });
 
-  it("refuses ALLOW with reason codes and DENY without reason codes", () => {
+  it("refuses ALLOW with reason codes and DENY without reason codes", async () => {
     const w = world();
     const base = {
       evidenceId: "ev-x",
@@ -276,16 +276,16 @@ describe("evidence and ledger pipeline", () => {
       execution: null,
     };
     const key = { keyId: "evidence-1", privateKey: w.evidence.privateKey };
-    expect(() =>
+    await expect(
       createEvidence(base, { sequence: 1, previousDigest: GENESIS_DIGEST }, key),
-    ).toThrow("ALLOW_WITH_REASON");
+    ).rejects.toThrow("ALLOW_WITH_REASON");
     const deny = {
       ...base,
       authorization: { ...base.authorization, result: "DENY" as const, reasonCodes: [] },
     };
-    expect(() =>
+    await expect(
       createEvidence(deny, { sequence: 1, previousDigest: GENESIS_DIGEST }, key),
-    ).toThrow("DENY_WITHOUT_REASON");
+    ).rejects.toThrow("DENY_WITHOUT_REASON");
   });
 });
 
@@ -343,7 +343,7 @@ describe("ledger integrity", () => {
 
   it("refuses a duplicate evidence id on append", async () => {
     const w = await three();
-    expect(() => w.ledger.append(draftOf("ev-1"))).toThrow("already recorded");
+    await expect(w.ledger.append(draftOf("ev-1"))).rejects.toThrow("already recorded");
     expect(w.ledger.size()).toBe(3);
   });
 
@@ -351,7 +351,7 @@ describe("ledger integrity", () => {
     const w = await three();
     const lines = w.ledger.export();
     const first = JSON.parse(lines[0] ?? "") as SignedEvidence;
-    const copy = createEvidence(
+    const copy = await createEvidence(
       {
         evidenceId: first.body.evidenceId,
         transactionId: first.body.transactionId,
@@ -372,7 +372,7 @@ describe("ledger integrity", () => {
     const w = await three();
     const rogue = generateSigningKeyPair();
     const first = JSON.parse(w.ledger.export()[0] ?? "") as SignedEvidence;
-    const forged = createEvidence(
+    const forged = await createEvidence(
       {
         evidenceId: "ev-forged",
         transactionId: "txn-1",
@@ -390,7 +390,7 @@ describe("ledger integrity", () => {
     ]);
   });
 
-  it("reports malformed lines without throwing", () => {
+  it("reports malformed lines without throwing", async () => {
     const w = world();
     expect(codesOf(verifyChain(["{not json"], w.trust))).toEqual(["0:MALFORMED"]);
   });

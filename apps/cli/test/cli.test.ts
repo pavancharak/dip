@@ -11,7 +11,7 @@ import { EXIT, runCli, type CliIo } from "../src/index.js";
 const NOW = new Date("2026-06-01T12:00:00Z");
 const URL_BASE = "http://dip.test";
 
-function world() {
+async function world() {
   const keys = {
     issuer: generateSigningKeyPair(),
     engine: generateSigningKeyPair(),
@@ -69,7 +69,7 @@ function world() {
   return { client, keys, connector, fetchToApi };
 }
 
-function authorityBody(): AuthorityBody {
+function authorityBody(): Promise<AuthorityBody> {
   return parseAuthorityBody({
     authorityId: "auth-1",
     version: 1,
@@ -167,7 +167,7 @@ describe("dip command line", () => {
   });
 
   it("authorize returns 0 for ALLOW and 1 for DENY, against the real API", async () => {
-    const w = world();
+    const w = await world();
     w.client.publishAuthority(signAuthority(authorityBody(), w.keys.issuer.privateKey));
     const files = {
       "allow.json": JSON.stringify(rawRequest(400_000, "a")),
@@ -182,9 +182,11 @@ describe("dip command line", () => {
   });
 
   it("execute runs once; a repeat is a duplicate, and a refused decision exits 1", async () => {
-    const w = world();
+    const w = await world();
     w.client.publishAuthority(signAuthority(authorityBody(), w.keys.issuer.privateKey));
-    const authorized = w.client.authorize(w.client.normalizeRequest(rawRequest(400_000, "x")));
+    const authorized = await w.client.authorize(
+      w.client.normalizeRequest(rawRequest(400_000, "x")),
+    );
     const body = JSON.stringify({
       request: rawRequest(400_000, "x"),
       decision: authorized.decision,
@@ -201,7 +203,7 @@ describe("dip command line", () => {
     );
     expect(again.exitCode).toBe(EXIT.OK);
     expect(w.connector.calls).toBe(1);
-    const denied = w.client.authorize(w.client.normalizeRequest(rawRequest(80_000_000, "y")));
+    const denied = await w.client.authorize(w.client.normalizeRequest(rawRequest(80_000_000, "y")));
     const refused = await runCli(
       ["execute", "r.json"],
       io(

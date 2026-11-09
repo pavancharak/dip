@@ -1,6 +1,12 @@
-import { canonicalize, digestWithDomain, signWithDomain, verifyWithDomain } from "@dip/crypto";
+import {
+  asSigningProvider,
+  canonicalize,
+  digestWithDomain,
+  signWithProvider,
+  verifyWithDomain,
+  type SignerInput,
+} from "@dip/crypto";
 import { DipError, TrustRootSet, exactKeys, id, int, obj, time } from "@dip/authority";
-import type { KeyObject } from "node:crypto";
 
 /**
  * Evidence envelope. It records what was authorized and, separately, what was
@@ -77,10 +83,7 @@ export interface EvidenceDraft {
   readonly execution: EvidenceExecution | null;
 }
 
-export interface Signer {
-  readonly keyId: string;
-  readonly privateKey: KeyObject;
-}
+export type Signer = SignerInput;
 
 export interface ChainPosition {
   readonly sequence: number;
@@ -105,11 +108,12 @@ export function checkInvariants(body: EvidenceBody): string | null {
   return null;
 }
 
-export function createEvidence(
+export async function createEvidence(
   draft: EvidenceDraft,
   position: ChainPosition,
   signer: Signer,
-): SignedEvidence {
+): Promise<SignedEvidence> {
+  const provider = asSigningProvider(signer);
   const body: EvidenceBody = {
     evidenceId: draft.evidenceId,
     sequence: position.sequence,
@@ -121,14 +125,14 @@ export function createEvidence(
     authorization: draft.authorization,
     approvalRef: draft.approvalRef,
     execution: draft.execution,
-    signingKeyId: signer.keyId,
+    signingKeyId: provider.keyId,
     signatureAlgorithm: "Ed25519",
   };
   const violation = checkInvariants(body);
   if (violation) throw new DipError("EVIDENCE_INVARIANT_VIOLATED", violation);
   return {
     body,
-    signature: signWithDomain(EVIDENCE_DOMAIN, canonicalize(body), signer.privateKey),
+    signature: await signWithProvider(provider, EVIDENCE_DOMAIN, canonicalize(body)),
   };
 }
 

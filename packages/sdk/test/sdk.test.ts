@@ -111,12 +111,12 @@ describe("DipClient", () => {
     const { client, keys, calls } = makeClient();
     client.publishAuthority(signAuthority(body(), keys.issuer.privateKey));
     const normalized = client.normalizeRequest(raw());
-    const outcome = client.authorize(normalized);
+    const outcome = await client.authorize(normalized);
     expect(["ALLOW", "DENY"]).toContain(outcome.result);
     expect(outcome.result).toBe("ALLOW");
     const attempt = await client.execute(normalized, outcome.decision);
     expect(attempt.state).toBe("SUCCEEDED");
-    client.record({ normalized, decision: outcome.decision, attempt });
+    await client.record({ normalized, decision: outcome.decision, attempt });
     expect(calls()).toBe(1);
     expect(client.verifyLedger(client.ledgerHead()).valid).toBe(true);
   });
@@ -127,14 +127,14 @@ describe("DipClient", () => {
     const normalized = client.normalizeRequest(
       raw({ amount: { minor: 80_000_000, currency: "INR" } }),
     );
-    const outcome = client.authorize(normalized);
+    const outcome = await client.authorize(normalized);
     expect(outcome.result).toBe("DENY");
     const attempt = await client.execute(normalized, outcome.decision);
     expect(attempt.state).toBe("REFUSED");
     expect(calls()).toBe(0);
   });
 
-  it("approve refuses a decision whose action is not APPROVE", () => {
+  it("approve refuses a decision whose action is not APPROVE", async () => {
     const { client, keys } = makeClient();
     const signed = signApprovalDecision(
       {
@@ -148,7 +148,7 @@ describe("DipClient", () => {
     expect(() => client.approve(signed)).toThrow(DipError);
   });
 
-  it("approval states are returned only by approval methods", () => {
+  it("approval states are returned only by approval methods", async () => {
     const { client, keys } = makeClient();
     client.requestApproval({
       approvalId: "appr-1",
@@ -175,13 +175,13 @@ describe("DipClient", () => {
     expect(approved).toBe("APPROVED");
   });
 
-  it("reports a missing authority as a typed error", () => {
+  it("reports a missing authority as a typed error", async () => {
     const { client } = makeClient();
     expect(() => client.getAuthority("missing", 1)).not.toThrow();
     expect(client.getAuthority("missing", 1)).toBeUndefined();
   });
 
-  it("publishing a tampered authority is refused with a typed code", () => {
+  it("publishing a tampered authority is refused with a typed code", async () => {
     const { client, keys } = makeClient();
     const signed = signAuthority(body(), keys.issuer.privateKey);
     const tampered = {
@@ -201,9 +201,9 @@ describe("DipClient", () => {
     const { client, keys } = makeClient();
     client.publishAuthority(signAuthority(body(), keys.issuer.privateKey));
     const normalized = client.normalizeRequest(raw());
-    const outcome = client.authorize(normalized);
+    const outcome = await client.authorize(normalized);
     const attempt = await client.execute(normalized, outcome.decision);
-    client.record({ normalized, decision: outcome.decision, attempt });
+    await client.record({ normalized, decision: outcome.decision, attempt });
     const bundle = {
       format: "dip-evidence-bundle",
       formatVersion: 1,

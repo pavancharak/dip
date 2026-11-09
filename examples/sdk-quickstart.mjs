@@ -68,13 +68,13 @@ const request = client.normalizeRequest({
   idempotencyKey: "idem-1",
   protocolVersion: "1.0",
 });
-const { result, decision } = client.authorize(request);
+const { result, decision } = await client.authorize(request);
 console.log("authorization:", result);
 
 // 3. Execute through the protected boundary, then record evidence for the attempt.
 const attempt = await client.execute(request, decision);
 console.log("execution:", attempt.state, attempt.externalRef ?? "");
-client.record({ normalized: request, decision, attempt });
+await client.record({ normalized: request, decision, attempt });
 
 // 4. Verify the ledger held by this client.
 const report = client.verifyLedger(client.ledgerHead());

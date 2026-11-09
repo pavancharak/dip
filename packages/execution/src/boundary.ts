@@ -55,7 +55,7 @@ export interface BoundaryOptions {
   /** Re-checks a referenced approval at execution time. Returns a reason code, or null when still valid. */
   readonly approvalRecheck?: (request: RequestBody) => string | null;
   /** Re-checks that the authority is still in good standing at execution time. Returns a reason code, or null. */
-  readonly authorityRecheck?: (request: RequestBody) => string | null;
+  readonly authorityRecheck?: (request: RequestBody) => Promise<string | null>;
   /** Receives each committed change (attempts, consumed decisions, completions) for durable logging. */
   readonly journal?: Journal | undefined;
 }
@@ -237,7 +237,7 @@ export class ExecutionBoundary {
 
     // 5. The authority must still be in good standing: a decision does not outlive its authority.
     if (this.options.authorityRecheck) {
-      const standing = this.options.authorityRecheck(request);
+      const standing = await this.options.authorityRecheck(request);
       if (standing !== null) return refuse(decisionId, standing);
     }
 

@@ -128,7 +128,7 @@ function publish(l: Lab): void {
 }
 
 describe("authority attacks", () => {
-  it("a forged authority signed by an unknown key is refused", () => {
+  it("a forged authority signed by an unknown key is refused", async () => {
     const l = lab();
     const forged = signAuthority(
       authorityBody({ signingKeyId: "rogue-key" }),
@@ -137,13 +137,13 @@ describe("authority attacks", () => {
     expect(() => l.client.publishAuthority(forged)).toThrow(DipError);
   });
 
-  it("an authority signed by the right key id but the wrong private key is refused", () => {
+  it("an authority signed by the right key id but the wrong private key is refused", async () => {
     const l = lab();
     const forged = signAuthority(authorityBody(), l.keys.rogue.privateKey);
     expect(() => l.client.publishAuthority(forged)).toThrow(DipError);
   });
 
-  it("a forged revocation signed by a non-issuer key cannot revoke an authority", () => {
+  it("a forged revocation signed by a non-issuer key cannot revoke an authority", async () => {
     const l = lab();
     publish(l);
     const forged = signRevocation(
@@ -156,14 +156,14 @@ describe("authority attacks", () => {
       l.keys.rogue.privateKey,
     );
     expect(() => l.client.revokeAuthority(forged)).toThrow(DipError);
-    expect(l.client.authorize(l.client.normalizeRequest(raw())).result).toBe("ALLOW");
+    expect((await l.client.authorize(l.client.normalizeRequest(raw()))).result).toBe("ALLOW");
   });
 
   it("regression: an authority revoked after an ALLOW decision stops execution", async () => {
     const l = lab();
     publish(l);
     const normalized = l.client.normalizeRequest(raw());
-    const decision = l.client.authorize(normalized).decision;
+    const decision = (await l.client.authorize(normalized)).decision;
     l.client.revokeAuthority(
       signRevocation(
         {
@@ -190,13 +190,13 @@ describe("decision and request substitution", () => {
     const large = l.client.normalizeRequest(
       raw({ amount: { minor: 450_000, currency: "INR" }, idempotencyKey: "idem-2" }),
     );
-    const decisionForSmall = l.client.authorize(small).decision;
+    const decisionForSmall = (await l.client.authorize(small)).decision;
     const attempt = await l.client.execute(large, decisionForSmall);
     expect(attempt.state).toBe("REFUSED");
     expect(l.calls.count).toBe(0);
   });
 
-  it("an approval for one request cannot be attached to a modified request", () => {
+  it("an approval for one request cannot be attached to a modified request", async () => {
     const l = lab();
     publish(l);
     const original = l.client.normalizeRequest(
@@ -217,13 +217,13 @@ describe("decision and request substitution", () => {
     const modified = l.client.normalizeRequest(
       raw({ amount: { minor: 3_000_000, currency: "INR" }, approvalRef: "appr-1" }),
     );
-    expect(l.client.authorize(modified).result).toBe("DENY");
-    expect(l.client.authorize(modified).decision.body.reasonCodes).toContain(
+    expect((await l.client.authorize(modified)).result).toBe("DENY");
+    expect((await l.client.authorize(modified)).decision.body.reasonCodes).toContain(
       "APPROVAL_BINDING_MISMATCH",
     );
   });
 
-  it("an approval cannot authorize an amount above the authority limit", () => {
+  it("an approval cannot authorize an amount above the authority limit", async () => {
     const l = lab();
     publish(l);
     const big = l.client.normalizeRequest(
@@ -241,12 +241,12 @@ describe("decision and request substitution", () => {
         l.keys.approver.privateKey,
       ),
     );
-    expect(l.client.authorize(big).decision.body.reasonCodes).toContain("AMOUNT_EXCEEDS_LIMIT");
+    expect((await l.client.authorize(big)).decision.body.reasonCodes).toContain("AMOUNT_EXCEEDS_LIMIT");
   });
 });
 
 describe("approval attacks", () => {
-  it("an approval decision signed by a non-designated key is refused", () => {
+  it("an approval decision signed by a non-designated key is refused", async () => {
     const l = lab();
     publish(l);
     const n = l.client.normalizeRequest(raw({ approvalRef: "appr-3" }));
@@ -264,7 +264,7 @@ describe("approval attacks", () => {
     expect(l.client.approvalStatus("appr-3")).toBe("PENDING");
   });
 
-  it("an approval cannot be decided twice", () => {
+  it("an approval cannot be decided twice", async () => {
     const l = lab();
     const n = l.client.normalizeRequest(raw());
     l.client.requestApproval(binding(n.requestDigest, "appr-4"));
@@ -294,7 +294,7 @@ describe("approval attacks", () => {
     ).toThrow(DipError);
   });
 
-  it("a decision timestamped before the approval request is refused", () => {
+  it("a decision timestamped before the approval request is refused", async () => {
     const l = lab();
     const n = l.client.normalizeRequest(raw());
     l.client.requestApproval(binding(n.requestDigest, "appr-5"));
@@ -311,7 +311,7 @@ describe("approval attacks", () => {
     expect(l.client.approvalStatus("appr-5")).toBe("PENDING");
   });
 
-  it("a decision after the approval expired is refused", () => {
+  it("a decision after the approval expired is refused", async () => {
     const l = lab({ now: new Date("2026-06-01T14:00:00Z") });
     const n = l.client.normalizeRequest(raw());
     l.client.requestApproval(binding(n.requestDigest, "appr-6"));
@@ -334,7 +334,7 @@ describe("execution attacks", () => {
     const l = lab();
     publish(l);
     const normalized = l.client.normalizeRequest(raw());
-    const decision = l.client.authorize(normalized).decision;
+    const decision = (await l.client.authorize(normalized)).decision;
     await l.client.execute(normalized, decision);
     const again = await l.client.execute(normalized, decision);
     expect(["DUPLICATE", "REFUSED"]).toContain(again.state);
@@ -345,7 +345,7 @@ describe("execution attacks", () => {
     const l = lab();
     publish(l);
     const normalized = l.client.normalizeRequest(raw());
-    const decision = l.client.authorize(normalized).decision;
+    const decision = (await l.client.authorize(normalized)).decision;
     const fresh = lab();
     void fresh;
     const attempt = await l.client.execute(normalized, {
@@ -361,7 +361,7 @@ describe("execution attacks", () => {
     const l = lab(clock);
     publish(l);
     const normalized = l.client.normalizeRequest(raw());
-    const decision = l.client.authorize(normalized).decision;
+    const decision = (await l.client.authorize(normalized)).decision;
     clock.now = new Date("2026-06-01T10:00:00Z");
     const attempt = await l.client.execute(normalized, decision);
     expect(attempt.reasonCode).toBe("DECISION_IN_FUTURE");
@@ -372,7 +372,7 @@ describe("execution attacks", () => {
     const l = lab(clock);
     publish(l);
     const normalized = l.client.normalizeRequest(raw());
-    const decision = l.client.authorize(normalized).decision;
+    const decision = (await l.client.authorize(normalized)).decision;
     clock.now = new Date("2026-06-01T13:00:00Z");
     const attempt = await l.client.execute(normalized, decision);
     expect(attempt.reasonCode).toBe("DECISION_STALE");
@@ -384,7 +384,7 @@ describe("execution attacks", () => {
     const normalized = l.client.normalizeRequest(
       raw({ amount: { minor: 80_000_000, currency: "INR" } }),
     );
-    const denied = l.client.authorize(normalized).decision;
+    const denied = (await l.client.authorize(normalized)).decision;
     expect(denied.body.result).toBe("DENY");
     let seed = 0x5eed;
     const next = (): number => {
@@ -428,9 +428,9 @@ describe("ledger attacks", () => {
     const normalized = l.client.normalizeRequest(
       raw({ amount: { minor: 80_000_000, currency: "INR" } }),
     );
-    const decision = l.client.authorize(normalized).decision;
+    const decision = (await l.client.authorize(normalized)).decision;
     const attempt = await l.client.execute(normalized, decision);
-    l.client.record({ normalized, decision, attempt });
+    await l.client.record({ normalized, decision, attempt });
     expect(l.client.verifyLedger(l.client.ledgerHead()).valid).toBe(true);
   });
 
@@ -439,9 +439,9 @@ describe("ledger attacks", () => {
     publish(l);
     for (let i = 0; i < 3; i++) {
       const n = l.client.normalizeRequest(raw({ idempotencyKey: `idem-${String(i)}` }));
-      const d = l.client.authorize(n).decision;
+      const d = (await l.client.authorize(n)).decision;
       const a = await l.client.execute(n, d);
-      l.client.record({ normalized: n, decision: d, attempt: a });
+      await l.client.record({ normalized: n, decision: d, attempt: a });
     }
     const lines = l.client.ledgerLines();
     expect(l.client.verifyLedger(l.client.ledgerHead()).valid).toBe(true);

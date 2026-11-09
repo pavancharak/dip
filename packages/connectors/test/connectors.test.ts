@@ -156,13 +156,13 @@ describe("response handling", () => {
 });
 
 describe("ERP, CRM and validation", () => {
-  it("ERP rejects document types outside the allowed set", () => {
+  it("ERP rejects document types outside the allowed set", async () => {
     expect(() =>
       erpPost.build(request("erp.post", { documentType: "PAYROLL", documentId: "x" })),
     ).toThrow(ConnectorValidationError);
   });
 
-  it("CRM rejects nested field values", () => {
+  it("CRM rejects nested field values", async () => {
     expect(() =>
       crmUpdate.build(
         request("crm.update", { objectType: "deal", objectId: "d", fields: { owner: { id: 1 } } }),
@@ -282,7 +282,7 @@ describe("only the execution boundary reaches a connector", () => {
     const w = world();
     const t = fakeTransport(200);
     const input = raw(80_000_000);
-    const decision = evaluate(input, w.ctx);
+    const decision = await evaluate(input, w.ctx);
     expect(decision.body.result).toBe("DENY");
     const boundary = new ExecutionBoundary({
       trust: w.trust,
@@ -300,7 +300,7 @@ describe("only the execution boundary reaches a connector", () => {
     const w = world();
     const t = fakeTransport(200);
     const input = raw(4_000_000);
-    const decision = evaluate(input, w.ctx);
+    const decision = await evaluate(input, w.ctx);
     const boundary = new ExecutionBoundary({
       trust: w.trust,
       connectors: new Map([["payment.create", build(paymentsCreate, t)]]),

@@ -153,9 +153,9 @@ export async function scenario(opts: {
     client.approve(decision);
     approvalRecords.push({ binding, decisions: [decision] });
   }
-  const outcome = client.authorize(normalized);
+  const outcome = await client.authorize(normalized);
   const attempt = await client.execute(normalized, outcome.decision);
-  client.record({ normalized, decision: outcome.decision, attempt });
+  await client.record({ normalized, decision: outcome.decision, attempt });
   return {
     bundle: {
       format: "dip-evidence-bundle",

@@ -13,7 +13,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@aws-sdk/client-kms": "^3.1164.0",
     "@dip/authority": "workspace:*",
+    "@dip/kms": "workspace:*",
     "@dip/sdk": "workspace:*",
     "@dip/storage": "workspace:*"
   },

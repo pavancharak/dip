@@ -17,14 +17,26 @@ export class ConfigError extends Error {
   }
 }
 
+/**
+ * A signer is either a local key (development and tests) or a KMS key (production).
+ * Exactly one of privateKey and kmsKeyId is set.
+ */
+export interface SignerSettings {
+  readonly keyId: string;
+  readonly privateKey: KeyObject | null;
+  readonly kmsKeyId: string | null;
+}
+
 export interface ServerConfig {
   readonly port: number;
   readonly maxDecisionAgeSeconds: number;
   readonly executionTimeoutMs: number;
   readonly rateLimit: { readonly max: number; readonly windowMs: number };
   readonly trustRoots: readonly TrustRoot[];
-  readonly engine: { readonly keyId: string; readonly privateKey: KeyObject };
-  readonly evidenceSigner: { readonly keyId: string; readonly privateKey: KeyObject };
+  readonly engine: SignerSettings;
+  readonly evidenceSigner: SignerSettings;
+  /** AWS region for KMS-held signers, or null when no signer uses KMS. */
+  readonly kmsRegion: string | null;
   readonly principals: ReadonlyMap<string, Principal>;
   /** Directory for the durable database, or null to run in memory only. */
   readonly dataDir: string | null;
@@ -88,8 +100,21 @@ export function loadConfig(raw: unknown, readFile: (path: string) => string): Se
   if (trustRoots.length === 0)
     throw new ConfigError("INVALID_CONFIG", "at least one trust root is required");
 
-  const loadKey = (section: unknown, path: string): { keyId: string; privateKey: KeyObject } => {
+  const loadKey = (section: unknown, path: string): SignerSettings => {
     const o = obj(section, path);
+    if (o.kmsKeyId !== undefined) {
+      if (o.privateKeyPath !== undefined) {
+        throw new ConfigError(
+          "INVALID_CONFIG",
+          `${path}: set kmsKeyId or privateKeyPath, not both`,
+        );
+      }
+      return {
+        keyId: text(o.keyId, `${path}.keyId`),
+        privateKey: null,
+        kmsKeyId: text(o.kmsKeyId, `${path}.kmsKeyId`),
+      };
+    }
     const pem = readFile(text(o.privateKeyPath, `${path}.privateKeyPath`));
     let key: KeyObject;
     try {
@@ -99,7 +124,7 @@ export function loadConfig(raw: unknown, readFile: (path: string) => string): Se
     }
     if (key.asymmetricKeyType !== "ed25519")
       throw new ConfigError("INVALID_KEY", `${path}: key must be Ed25519`);
-    return { keyId: text(o.keyId, `${path}.keyId`), privateKey: key };
+    return { keyId: text(o.keyId, `${path}.keyId`), privateKey: key, kmsKeyId: null };
   };
 
   const principals = new Map<string, Principal>();
@@ -149,6 +174,17 @@ export function loadConfig(raw: unknown, readFile: (path: string) => string): Se
     }
     postgresUrl = url;
   }
+  const engineSigner = loadKey(c.engine, "engine");
+  const evidenceSignerSettings = loadKey(c.evidenceSigner, "evidenceSigner");
+  const kmsSection = c.kms === undefined ? null : obj(c.kms, "kms");
+  const kmsRegion = kmsSection === null ? null : text(kmsSection.region, "kms.region");
+  if (
+    (engineSigner.kmsKeyId !== null || evidenceSignerSettings.kmsKeyId !== null) &&
+    kmsRegion === null
+  ) {
+    throw new ConfigError("INVALID_CONFIG", "kms.region is required when a signer uses kmsKeyId");
+  }
+
   return {
     dataDir: s.dataDir === undefined ? null : text(s.dataDir, "storage.dataDir"),
     postgresUrl,
@@ -166,8 +202,9 @@ export function loadConfig(raw: unknown, readFile: (path: string) => string): Se
       windowMs: int(rate.windowMs ?? 60_000, "rateLimit.windowMs", 1000, 3_600_000),
     },
     trustRoots,
-    engine: loadKey(c.engine, "engine"),
-    evidenceSigner: loadKey(c.evidenceSigner, "evidenceSigner"),
+    engine: engineSigner,
+    evidenceSigner: evidenceSignerSettings,
+    kmsRegion,
     principals,
   };
 }
