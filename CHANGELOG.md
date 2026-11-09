@@ -50,6 +50,11 @@
 - OpenAPI description generated from the route table, and a threat model covering 21 threats.
 - `dip` command-line tool with all commands in the build instruction, documented exit codes, and JSON output.
 
+### Fixed
+
+- Removed five empty placeholder packages that duplicated the `@dip/api` name.
+- Removed a stale matrix row that contradicted the split API rows.
+
 ### Notes
 
 - No approval workflow, execution boundary, evidence, ledger, verifier, SDK, CLI, API or connectors yet.
