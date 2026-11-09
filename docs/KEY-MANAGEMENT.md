@@ -1,6 +1,8 @@
 # Key Management Plan
 
-Status: **plan, with the first implementation step built.** The signing interface and a local provider exist and are tested. The cloud KMS adapter is not built. It needs an AWS account (or another provider's), sandbox access, and the decisions in section 8.
+Status: **adapter built and tested against a fake transport; not yet run against real KMS.** The signing interface, a local provider, and `AwsKmsSigningProvider` (`packages/kms`) exist and are tested. The sandbox tests in section 7 need an AWS account, sandbox access, and the decisions in section 8.
+
+AWS documentation confirms the signing parameters used: key spec `ECC_NIST_EDWARDS25519`, algorithm `ED25519_SHA_512` with message type `RAW`, 64-byte signatures. One point is still unverified against a live key: that `GetPublicKey` returns a DER SubjectPublicKeyInfo. The adapter parses it as DER and refuses anything else, so a mismatch fails loudly rather than silently.
 
 ## 1. Why this matters
 
