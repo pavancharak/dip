@@ -64,6 +64,8 @@
 - Open-source documentation: rewritten README, documentation index, quick start, installation, SDK guide, integration guide, verification guide, connector guide and troubleshooting. Contributing and security policies updated. A minimal SDK example (`examples/sdk-quickstart.mjs`) is verified by running it.
 - Restored `docs/RELEASE-AUDIT.md` (it had not reached `main`) and added a status update after the audit.
 
+- Signing provider interface (`SigningProvider`) and a local provider in `@dip/crypto`, plus a key management plan (`docs/KEY-MANAGEMENT.md`). The cloud KMS adapter is not built yet.
+
 ### Notes
 
 - No approval workflow, execution boundary, evidence, ledger, verifier, SDK, CLI, API or connectors yet.
