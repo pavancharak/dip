@@ -23,6 +23,8 @@
 - `@dip/evidence`: evidence envelope with separate authorization and execution sections, enforced invariants, Ed25519 signatures.
 - `@dip/ledger`: append-only hash-chained evidence ledger and standalone chain verifier with head anchoring.
 
+- `@dip/verifier`: independent evidence verifier and `dip-verify` CLI. Depends only on `@dip/crypto`. Returns VALID, INVALID, INCOMPLETE or UNVERIFIABLE with per-check detail.
+
 ### Notes
 
 - No approval workflow, execution boundary, evidence, ledger, verifier, SDK, CLI, API or connectors yet.

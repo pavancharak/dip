@@ -119,7 +119,30 @@ importers:
 
   packages/spec: {}
 
-  packages/verifier: {}
+  packages/verifier:
+    dependencies:
+      "@dip/crypto":
+        specifier: workspace:*
+        version: link:../crypto
+    devDependencies:
+      "@dip/approval":
+        specifier: workspace:*
+        version: link:../approval
+      "@dip/authority":
+        specifier: workspace:*
+        version: link:../authority
+      "@dip/authorization":
+        specifier: workspace:*
+        version: link:../authorization
+      "@dip/evidence":
+        specifier: workspace:*
+        version: link:../evidence
+      "@dip/execution":
+        specifier: workspace:*
+        version: link:../execution
+      "@dip/ledger":
+        specifier: workspace:*
+        version: link:../ledger
 
 packages:
   "@esbuild/aix-ppc64@0.21.5":

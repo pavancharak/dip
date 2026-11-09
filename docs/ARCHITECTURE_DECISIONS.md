@@ -75,3 +75,11 @@ Accepted. A decision is consumed before the connector runs. Idempotency protects
 ## ADR-0019: Timeouts are not failures and not successes
 
 Accepted. A connector that does not answer in time is recorded as TIMED_OUT. The outcome is unknown, so the boundary does not claim success or failure. Resolving it needs the external system's own reconciliation, which is a later phase.
+
+## ADR-0020: The verifier is independent code, not a shared library
+
+Accepted. `@dip/verifier` depends only on `@dip/crypto`. It re-implements the parsing, digest and approval replay from the specification, so a bug in the engine cannot be silently accepted by its own verifier. The cost is duplicated logic, which the verifier's tests check against bundles produced by the real pipeline.
+
+## ADR-0021: Verdict precedence
+
+Accepted. INVALID outranks UNVERIFIABLE, which outranks INCOMPLETE, which outranks VALID. A tampered record is never masked by a missing key elsewhere in the bundle.

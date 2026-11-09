@@ -1,6 +1,6 @@
 # Build Status
 
-Last updated: 2026-11-09. Phase 2 is on `main`; Phases 2 and 3 are merged; Phase 5 is on branch `phase5-evidence`.
+Last updated: 2026-11-09. Phase 2 is on `main`; Phases 2 and 3 are merged; Phase 6 is on branch `phase6-verifier`.
 
 ## Phase report
 
@@ -60,14 +60,22 @@ Not done: a persistent store (registry is in memory); approval-required paths be
 - Mandatory cryptographic tests from the master list are covered: invalid signatures, wrong keys, unknown keys, modified evidence, broken chain, duplicate sequence, missing records. Not covered: key rotation and revoked-key ledger behaviour beyond the signature check.
 - Limitations: storage is in memory. Tail truncation is undetectable without an external head anchor, and the ledger does not provide one. PostgreSQL append-only enforcement is not built.
 
-### Phases 6–11: NOT STARTED
+### Phase 6: Independent verifier (implemented and tested)
+
+- `@dip/verifier` depends only on `@dip/crypto`. It has its own parser, digest re-derivation, approval replay and chain check, and does not import the engine, ledger, execution boundary or registry.
+- Trust roots are supplied by the caller. They are never read from the bundle.
+- Results: VALID, INVALID (a check failed), UNVERIFIABLE (a signing key is unknown or cannot be verified), INCOMPLETE (a record needed for a check is missing, or no head anchor was given). Precedence: INVALID over UNVERIFIABLE over INCOMPLETE over VALID.
+- The CLI `dip-verify --bundle <file> --trust <file>` exits 0 VALID, 1 INVALID, 2 INCOMPLETE or UNVERIFIABLE, 3 usage or input error.
+- Limitation: the verifier confirms that the recorded decision is authentic and bound to the request. It does not re-evaluate policy against the authority.
+
+### Phases 7–11: NOT STARTED
 
 Approval workflow, execution control, evidence, ledger, independent verifier, SDK, CLI, REST API, connectors, conformance suite, adversarial tests, deployment and release audit are not started.
 
 ## Commands and results (local)
 
 - `pnpm check` (build, typecheck, ESLint, Prettier, Vitest): exit 0.
-- Tests: 113 passed (all packages).
+- Tests: 135 passed (all packages).
 
 ## Known limitations
 
