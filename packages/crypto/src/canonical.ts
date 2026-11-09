@@ -1,7 +1,7 @@
 /**
  * Canonical JSON encoding for DIP objects.
  *
- * Rules (normative, see docs/spec/03-canonical-encoding.md):
+ * Rules (normative, see docs/spec/05-canonicalization.md):
  * - Object keys are sorted by UTF-16 code unit order, recursively.
  * - No insignificant whitespace.
  * - Strings are emitted with JSON escaping.
