@@ -55,6 +55,8 @@
 - Removed five empty placeholder packages that duplicated the `@dip/api` name.
 - Removed a stale matrix row that contradicted the split API rows.
 
+- node-postgres adapter for the storage interface, with a real-server test that runs in CI against PostgreSQL 16.
+
 ### Notes
 
 - No approval workflow, execution boundary, evidence, ledger, verifier, SDK, CLI, API or connectors yet.
