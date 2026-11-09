@@ -28,6 +28,8 @@
 - `@dip/sdk`: developer client with strict ALLOW/DENY authorization, separate approval methods, evidence recording and verification.
 - `@dip/api`: versioned REST API (handler and node:http adapter) with API-key auth, scopes, tenant checks, rate limiting and typed errors.
 
+- `@dip/connectors`: connector contract and adapters for payments, refunds, vendor payouts, ERP, CRM and generic HTTP. Tested with fake transports. Endpoints are placeholders, not live integrations.
+
 ### Notes
 
 - No approval workflow, execution boundary, evidence, ledger, verifier, SDK, CLI, API or connectors yet.

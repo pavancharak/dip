@@ -86,7 +86,30 @@ importers:
 
   packages/conformance: {}
 
-  packages/connectors: {}
+  packages/connectors:
+    dependencies:
+      "@dip/authorization":
+        specifier: workspace:*
+        version: link:../authorization
+      "@dip/execution":
+        specifier: workspace:*
+        version: link:../execution
+    devDependencies:
+      "@dip/approval":
+        specifier: workspace:*
+        version: link:../approval
+      "@dip/authority":
+        specifier: workspace:*
+        version: link:../authority
+      "@dip/crypto":
+        specifier: workspace:*
+        version: link:../crypto
+      "@dip/evidence":
+        specifier: workspace:*
+        version: link:../evidence
+      "@dip/ledger":
+        specifier: workspace:*
+        version: link:../ledger
 
   packages/core: {}
 
