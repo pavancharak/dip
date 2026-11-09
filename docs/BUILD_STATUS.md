@@ -1,6 +1,6 @@
 # Build Status
 
-Last updated: 2026-11-09. Phase 2 is on `main`; Phases 2 and 3 are merged; Phase 7 is on branch `phase7-sdk-api`.
+Last updated: 2026-11-09. Phase 2 is on `main`; Phases 2 and 3 are merged; Phase 8 is on branch `phase8-connectors`.
 
 ## Phase report
 
@@ -74,14 +74,21 @@ Not done: a persistent store (registry is in memory); approval-required paths be
 - `@dip/api` (apps/api): handler for the listed endpoints, Bearer API keys, scopes (`admin` for ledger, `approver` for approval decisions), tenant checks on request and authority paths, in-memory rate limiting, typed error mapping, and a node:http adapter. Tests cover auth, routing, tenant and scope rules, execute refusal and success, approvals, ledger, verification, rate limit, and a real socket round trip.
 - Not done: the CLI (master §11), an OpenAPI document, persistent storage (all state is in memory), API-level idempotency keys, tenant filtering on evidence and ledger reads (evidence carries no tenant field), and production-grade authentication (keys are configured in code).
 
-### Phases 8–11: NOT STARTED
+### Phase 8: Connectors (implemented; live integrations not verified)
+
+- `@dip/connectors`: a contract that every connector follows. A connector never decides authorization, and it runs only through `ExecutionBoundary`. Each call carries the idempotency key. Money comes from the authorized request amount, and a conflicting parameter is refused before any network call. A 2xx without an external reference is FAILED. 429 and 5xx are transient failures. Other 4xx are permanent.
+- Adapters: payments, refunds, vendor payouts, ERP (allowed document types only), CRM (field values restricted), generic HTTP (HTTPS only, host allowlist, POST/PUT/PATCH only).
+- Tests: 155 passed across all packages. The connector tests use fake transports, and verify that a DENY decision never reaches the transport and an ALLOW decision reaches it exactly once.
+- Not verified: the adapters' endpoints are placeholders on `*.example.invalid`. No live vendor was called, because no credentials or network access were available. The default transport for production is not built. Each vendor's real request and response formats still need to be checked against its documentation.
+
+### Phases 9–11: NOT STARTED
 
 Approval workflow, execution control, evidence, ledger, independent verifier, SDK, CLI, REST API, connectors, conformance suite, adversarial tests, deployment and release audit are not started.
 
 ## Commands and results (local)
 
 - `pnpm check` (build, typecheck, ESLint, Prettier, Vitest): exit 0.
-- Tests: 142 passed (all packages).
+- Tests: 155 passed (all packages).
 
 ## Known limitations
 
