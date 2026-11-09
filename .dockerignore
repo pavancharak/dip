@@ -1,0 +1,13 @@
+.git
+**/node_modules
+**/dist
+secrets
+keys
+conformance
+examples
+docs
+**/*.pem
+**/*.key
+**/*.public.json
+.env
+.env.*

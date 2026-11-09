@@ -39,6 +39,9 @@
 - API evidence reads are restricted to the owning tenant.
 - `pnpm test` now runs the `apps/` test suites.
 
+- Runnable examples (`examples/run.mjs`), server entry point with fail-closed configuration, key generator, Dockerfile, Compose file, and deployment documentation.
+- CI jobs for examples, Docker image build, and production dependency audit.
+
 ### Notes
 
 - No approval workflow, execution boundary, evidence, ledger, verifier, SDK, CLI, API or connectors yet.

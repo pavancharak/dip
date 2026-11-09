@@ -40,3 +40,9 @@ Statuses: NOT_STARTED, IN_PROGRESS, IMPLEMENTED, VERIFIED, BLOCKED. IMPLEMENTED 
 | T-01   | Conformance suite                                                        | master §14   | none                                                      | none                                          | NOT_STARTED                                          |
 | D-01   | Persistent storage (PostgreSQL)                                          | master §12   | none                                                      | none                                          | NOT_STARTED                                          |
 | B-01   | CI workflow runs on GitHub                                               | master §17   | .github/workflows/ci.yml                                  | not yet run on GitHub                         | IMPLEMENTED                                          |
+
+| D-02 | Container image, Compose file, non-root user, read-only filesystem, no secrets in the image | master §17 | Dockerfile, docker-compose.yml, .dockerignore | CI job `docker` builds the image | IMPLEMENTED: not built locally (no Docker daemon in the build environment); CI is the first build |
+| D-03 | Fail-closed server configuration and key loading from files | master §17 | apps/api/src/config.ts, apps/api/src/server.ts | apps/api/test/config.test.ts | VERIFIED |
+| D-04 | Executable examples reproduced on a clean install | master Phase 10 acceptance | examples/run.mjs | `node examples/run.mjs` (CI job `examples`) | VERIFIED: 4/4 pass locally |
+| D-05 | CI jobs for examples, image build, and production dependency audit | master §17 | .github/workflows/ci.yml | CI | IMPLEMENTED: the new checks have not yet run on GitHub |
+| D-06 | Database schema, migrations, backups, recovery | master §12 | none | none | NOT_STARTED: state is in memory |

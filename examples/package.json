@@ -1,0 +1,12 @@
+{
+  "name": "@dip/examples",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "examples": "node run.mjs"
+  },
+  "dependencies": {
+    "@dip/sdk": "workspace:*"
+  }
+}

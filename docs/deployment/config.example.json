@@ -1,0 +1,45 @@
+{
+  "port": 3000,
+  "maxDecisionAgeSeconds": 300,
+  "executionTimeoutMs": 5000,
+  "rateLimit": { "max": 600, "windowMs": 60000 },
+  "trustRoots": [
+    {
+      "keyId": "issuer-key-1",
+      "jwk": { "kty": "OKP", "crv": "Ed25519", "x": "REPLACE_WITH_PUBLIC_X" },
+      "status": "ACTIVE"
+    },
+    {
+      "keyId": "engine-1",
+      "jwk": { "kty": "OKP", "crv": "Ed25519", "x": "REPLACE_WITH_PUBLIC_X" },
+      "status": "ACTIVE"
+    },
+    {
+      "keyId": "evidence-1",
+      "jwk": { "kty": "OKP", "crv": "Ed25519", "x": "REPLACE_WITH_PUBLIC_X" },
+      "status": "ACTIVE"
+    }
+  ],
+  "engine": { "keyId": "engine-1", "privateKeyPath": "/run/secrets/engine.pem" },
+  "evidenceSigner": { "keyId": "evidence-1", "privateKeyPath": "/run/secrets/evidence.pem" },
+  "principals": [
+    {
+      "name": "operator",
+      "tenantId": "tenant-1",
+      "scopes": [],
+      "apiKeyPath": "/run/secrets/operator.key"
+    },
+    {
+      "name": "approver",
+      "tenantId": "tenant-1",
+      "scopes": ["approver"],
+      "apiKeyPath": "/run/secrets/approver.key"
+    },
+    {
+      "name": "auditor",
+      "tenantId": null,
+      "scopes": ["admin", "approver"],
+      "apiKeyPath": "/run/secrets/admin.key"
+    }
+  ]
+}

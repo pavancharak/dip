@@ -1,0 +1,23 @@
+# Local single-node deployment. The API holds state in memory: a restart discards it.
+# Put the config and secrets in ./secrets (git-ignored), for example:
+#   secrets/dip-config.json      (see docs/deployment/config.example.json)
+#   secrets/engine.pem, evidence.pem, operator.key
+services:
+  api:
+    build: .
+    image: dip-api:local
+    ports:
+      - "3000:3000"
+    environment:
+      DIP_CONFIG: /run/secrets/dip-config.json
+      PORT: "3000"
+    volumes:
+      - ./secrets:/run/secrets:ro
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
