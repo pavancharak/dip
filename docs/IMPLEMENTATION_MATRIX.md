@@ -1,22 +1,42 @@
 # Implementation Matrix
 
-| Component                 | Package              | Phase | Status      |
-| ------------------------- | -------------------- | ----- | ----------- |
-| Specification             | docs/spec            | 1     | Skeleton    |
-| Cryptographic foundation  | packages/crypto      | 1     | Placeholder |
-| Authority model           | packages/authority   | 1     | Placeholder |
-| Authorization engine      | packages/authz       | 1     | Placeholder |
-| Approval workflow         | packages/approval    | 1     | Placeholder |
-| Execution boundary        | packages/execution   | 2     | Placeholder |
-| Evidence generation       | packages/evidence    | 2     | Placeholder |
-| Append-only ledger        | packages/ledger      | 2     | Placeholder |
-| Independent verifier      | packages/verifier    | 2     | Placeholder |
-| SDK                       | packages/sdk         | 3     | Placeholder |
-| CLI                       | packages/cli         | 3     | Placeholder |
-| REST API                  | packages/api         | 3     | Placeholder |
-| Connector framework       | packages/connectors  | 3     | Placeholder |
-| Conformance suite         | packages/conformance | 2     | Placeholder |
-| Deployment infrastructure | (none)               | 4     | Not started |
+Statuses: NOT_STARTED, IN_PROGRESS, IMPLEMENTED, VERIFIED, BLOCKED. IMPLEMENTED means code exists. VERIFIED means tests exist and pass. Only VERIFIED rows count as done.
 
-Phase numbers are proposed, not agreed. Parmana integration is a later phase
-and is not a prerequisite for any row above.
+| Req ID | Requirement                                                              | Spec ref     | Implementation                                            | Tests                                         | Status                                               |
+| ------ | ------------------------------------------------------------------------ | ------------ | --------------------------------------------------------- | --------------------------------------------- | ---------------------------------------------------- | -------- |
+| C-01   | Deterministic canonical JSON (sorted keys, no whitespace, integers only) | spec 03 §3.2 | packages/crypto/src/canonical.ts                          | packages/crypto/test/crypto.test.ts           | VERIFIED (internal tests; not RFC 8785 vectors)      |
+| C-02   | RFC 8785 JCS conformance                                                 | spec 03      | none                                                      | none                                          | NOT_STARTED                                          |
+| C-03   | SHA-256 digest                                                           | spec 03 §3.3 | packages/crypto/src/hash.ts                               | crypto.test.ts (known vector)                 | VERIFIED                                             |
+| C-04   | Ed25519 signing and verification                                         | spec 12      | packages/crypto/src/signing.ts                            | crypto.test.ts                                | VERIFIED                                             |
+| C-05   | Domain separation                                                        | spec 12      | packages/crypto/src/domain.ts                             | packages/crypto/test/domain.test.ts           | VERIFIED                                             |
+| C-06   | Key formats (JWK)                                                        | spec 12      | packages/crypto/src/jwk.ts                                | domain.test.ts                                | VERIFIED                                             |
+| C-07   | Cross-implementation test vectors                                        | spec 21      | none                                                      | none                                          | NOT_STARTED                                          |
+| A-01   | Authority declaration fields, strict parse                               | spec 05 §5.1 | packages/authority/src/body.ts                            | packages/authority/test/authority.test.ts     | VERIFIED                                             |
+| A-02   | Integer minor-unit limits (no floats)                                    | master §6    | packages/authority/src/body.ts                            | authority.test.ts (rejects 50000.5)           | VERIFIED                                             |
+| A-03   | Signed authority, Ed25519                                                | master §5.1  | packages/authority/src/signing.ts                         | authority.test.ts                             | VERIFIED                                             |
+| A-04   | Trust roots and key revocation                                           | master §5.9  | packages/authority/src/trust.ts                           | authority.test.ts, authorization.test.ts (5c) | VERIFIED                                             |
+| A-05   | Immutable, contiguous versions                                           | master §5.1  | packages/authority/src/registry.ts                        | authority.test.ts                             | VERIFIED                                             |
+| A-06   | Signed revocation                                                        | master §5.1  | packages/authority/src/registry.ts, signing.ts            | authority.test.ts (revocation)                | VERIFIED                                             |
+| A-07   | Missing/invalid/expired/revoked/superseded/insufficient → DENY           | master §5.1  | packages/authorization/src/evaluate.ts (standing)         | authorization.test.ts §2–5b                   | VERIFIED                                             |
+| A-08   | Delegated authority within parent bounds                                 | master §5.1  | packages/authorization/src/evaluate.ts (delegationReason) | authorization.test.ts (delegation)            | VERIFIED                                             |
+| R-01   | Deterministic request normalization                                      | master §5.2  | packages/authorization/src/normalize.ts                   | authorization.test.ts (normalization)         | VERIFIED                                             |
+| R-02   | Reject ambiguous/invalid input                                           | master §5.2  | normalize.ts (parseRequestBody)                           | authorization.test.ts                         | VERIFIED                                             |
+| R-03   | Material change changes digest                                           | master §5.2  | normalize.ts (digestRequest)                              | authorization.test.ts                         | VERIFIED                                             |
+| E-01   | Two-outcome engine (ALLOW                                                | DENY only)   | master §3, §5.3                                           | packages/authorization/src/evaluate.ts        | authorization.test.ts ("returns only ALLOW or DENY") | VERIFIED |
+| E-02   | Deterministic, reproducible evaluation                                   | master §5.3  | evaluate.ts (injected clock)                              | authorization.test.ts ("is reproducible")     | VERIFIED                                             |
+| E-03   | Signed decision                                                          | master §5.3  | evaluate.ts (signWithDomain)                              | authorization.test.ts ("signs each decision") | VERIFIED                                             |
+| E-04   | Mandatory tests 1–10                                                     | master §14   | evaluate.ts                                               | authorization.test.ts                         | VERIFIED                                             |
+| E-05   | Mandatory test 11 (approval absent → DENY)                               | master §14   | evaluate.ts (APPROVAL)                                    | authorization.test.ts                         | VERIFIED                                             |
+| E-06   | Approval cannot override authority (test 16, amount part)                | master §14   | evaluate.ts                                               | authorization.test.ts                         | VERIFIED (partial: approval verification not built)  |
+| P-01   | Approval workflow states and binding                                     | master §5.4  | none                                                      | none                                          | NOT_STARTED                                          |
+| P-02   | Mandatory tests 12–15, 17 (approval states, re-evaluation)               | master §14   | none                                                      | none                                          | NOT_STARTED                                          |
+| X-01   | Protected execution boundary                                             | master §5.5  | none                                                      | none                                          | NOT_STARTED                                          |
+| X-02   | Mandatory tests 18–20                                                    | master §14   | none                                                      | none                                          | NOT_STARTED                                          |
+| V-01   | Evidence envelope and signatures                                         | master §5.6  | none                                                      | none                                          | NOT_STARTED                                          |
+| L-01   | Append-only hash-chained ledger                                          | master §5.7  | none                                                      | none                                          | NOT_STARTED                                          |
+| I-01   | Independent verifier                                                     | master §5.8  | none                                                      | none                                          | NOT_STARTED                                          |
+| S-01   | SDK, CLI, REST API                                                       | master §9–11 | none                                                      | none                                          | NOT_STARTED                                          |
+| K-01   | Connectors                                                               | master §5.10 | none                                                      | none                                          | NOT_STARTED                                          |
+| T-01   | Conformance suite                                                        | master §14   | none                                                      | none                                          | NOT_STARTED                                          |
+| D-01   | Persistent storage (PostgreSQL)                                          | master §12   | none                                                      | none                                          | NOT_STARTED                                          |
+| B-01   | CI workflow runs on GitHub                                               | master §17   | .github/workflows/ci.yml                                  | not yet run on GitHub                         | IMPLEMENTED                                          |

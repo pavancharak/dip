@@ -23,7 +23,7 @@ export class CanonicalEncodingError extends Error {
   }
 }
 
-export function canonicalize(value: CanonicalValue): string {
+export function canonicalize(value: unknown): string {
   return encode(value, "$");
 }
 

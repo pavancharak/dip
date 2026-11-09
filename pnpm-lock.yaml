@@ -33,7 +33,20 @@ importers:
 
   packages/approval: {}
 
-  packages/authority: {}
+  packages/authority:
+    dependencies:
+      "@dip/crypto":
+        specifier: workspace:*
+        version: link:../crypto
+
+  packages/authorization:
+    dependencies:
+      "@dip/authority":
+        specifier: workspace:*
+        version: link:../authority
+      "@dip/crypto":
+        specifier: workspace:*
+        version: link:../crypto
 
   packages/authz: {}
 
