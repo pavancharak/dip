@@ -1,6 +1,6 @@
 # Build Status
 
-Last updated: 2026-11-09. Phase 2 is on `main`; Phases 2 and 3 are merged; Phase 6 is on branch `phase6-verifier`.
+Last updated: 2026-11-09. Phase 2 is on `main`; Phases 2 and 3 are merged; Phase 7 is on branch `phase7-sdk-api`.
 
 ## Phase report
 
@@ -68,14 +68,20 @@ Not done: a persistent store (registry is in memory); approval-required paths be
 - The CLI `dip-verify --bundle <file> --trust <file>` exits 0 VALID, 1 INVALID, 2 INCOMPLETE or UNVERIFIABLE, 3 usage or input error.
 - Limitation: the verifier confirms that the recorded decision is authentic and bound to the request. It does not re-evaluate policy against the authority.
 
-### Phases 7–11: NOT STARTED
+### Phase 7: SDK and REST API (partially implemented)
+
+- `@dip/sdk`: `DipClient` wraps the packages. Authorization returns only ALLOW or DENY. Approval states are returned only by approval methods. Execution records evidence through the ledger. Tests: 7 passed.
+- `@dip/api` (apps/api): handler for the listed endpoints, Bearer API keys, scopes (`admin` for ledger, `approver` for approval decisions), tenant checks on request and authority paths, in-memory rate limiting, typed error mapping, and a node:http adapter. Tests cover auth, routing, tenant and scope rules, execute refusal and success, approvals, ledger, verification, rate limit, and a real socket round trip.
+- Not done: the CLI (master §11), an OpenAPI document, persistent storage (all state is in memory), API-level idempotency keys, tenant filtering on evidence and ledger reads (evidence carries no tenant field), and production-grade authentication (keys are configured in code).
+
+### Phases 8–11: NOT STARTED
 
 Approval workflow, execution control, evidence, ledger, independent verifier, SDK, CLI, REST API, connectors, conformance suite, adversarial tests, deployment and release audit are not started.
 
 ## Commands and results (local)
 
 - `pnpm check` (build, typecheck, ESLint, Prettier, Vitest): exit 0.
-- Tests: 135 passed (all packages).
+- Tests: 142 passed (all packages).
 
 ## Known limitations
 
