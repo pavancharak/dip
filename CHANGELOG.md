@@ -57,6 +57,8 @@
 
 - node-postgres adapter for the storage interface, with a real-server test that runs in CI against PostgreSQL 16.
 
+- Retention policy draft: evidence is kept indefinitely. Periods and personal-data points need owner and counsel decisions.
+
 ### Notes
 
 - No approval workflow, execution boundary, evidence, ledger, verifier, SDK, CLI, API or connectors yet.
