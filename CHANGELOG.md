@@ -57,6 +57,7 @@
 
 - node-postgres adapter for the storage interface, with a real-server test that runs in CI against PostgreSQL 16.
 
+- `dip backup create|verify|restore`: backups of the stopped file-backed database with a manifest, chain verification and restore.
 - Retention policy draft: evidence is kept indefinitely. Periods and personal-data points need owner and counsel decisions.
 - Specification documents 1 to 21, drafted to match the implementation. Canonical encoding is renumbered from section 3 to section 5.
 
