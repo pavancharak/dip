@@ -48,7 +48,7 @@ Protocol guarantees are distinct from infrastructure, identity, operations and a
 
 - **Scenario:** an ALLOW decision is submitted again to execute twice.
 - **Mitigation:** a decision is consumed before the connector runs. Replays are refused, and the completed result is returned for an identical idempotency key. The consumed set is journaled and survives restarts.
-- **Residual:** replay protection is per process only if the server runs without `storage.dataDir`.
+- **Residual:** replay protection is per process only if the server runs without `storage.dataDir` or `storage.postgresUrlPath`.
 - **Test:** `adversarial.test.ts` ("replayed after execution"); `apps/api/test/durable.test.ts` (replay after restart).
 
 ### T6 Approval substitution

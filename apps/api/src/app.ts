@@ -33,6 +33,8 @@ export interface ApiConfig {
   readonly principals: ReadonlyMap<string, Principal>;
   readonly rateLimit: { readonly max: number; readonly windowMs: number };
   readonly clockMs: () => number;
+  /** Called when changes cannot be written. The server should stop; see server.ts. */
+  readonly onPersistenceFailure?: (err: unknown) => void;
 }
 
 type Handler = (ctx: Context) => Promise<ApiResponse> | ApiResponse;
@@ -356,6 +358,15 @@ export function createApi(config: ApiConfig): {
         // Changes made by the handler are written to the event log before the response
         // is returned, even when the handler fails part-way: nothing is acknowledged
         // unless it is durable, and nothing applied in memory is left unrecorded.
+        // Changes are written on both paths, so nothing applied in memory goes unrecorded.
+        const persist = async (): Promise<void> => {
+          try {
+            await config.client.flush();
+          } catch (flushErr) {
+            config.onPersistenceFailure?.(flushErr);
+            throw flushErr;
+          }
+        };
         let response: ApiResponse;
         try {
           response = await route.handler({
@@ -364,9 +375,11 @@ export function createApi(config: ApiConfig): {
             body,
             principal,
           });
-        } finally {
-          await config.client.flush();
+        } catch (handlerErr) {
+          await persist();
+          throw handlerErr;
         }
+        await persist();
         return response;
       } catch (err) {
         if (err instanceof DipError) return mapDipError(err);

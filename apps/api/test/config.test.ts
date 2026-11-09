@@ -42,6 +42,39 @@ function files(extra: Record<string, string> = {}): (p: string) => string {
   };
 }
 
+describe("storage configuration", () => {
+  it("reads the PostgreSQL connection string from a secret file", () => {
+    const c = loadConfig(
+      raw({ storage: { postgresUrlPath: "/run/secrets/pg-url" } }),
+      files({ "/run/secrets/pg-url": "postgres://dip:pw@db:5432/dip\n" }),
+    );
+    expect(c.postgresUrl).toBe("postgres://dip:pw@db:5432/dip");
+    expect(c.dataDir).toBeNull();
+  });
+
+  it("refuses dataDir and postgresUrlPath together", () => {
+    const bad = raw({
+      storage: { dataDir: "/var/lib/dip", postgresUrlPath: "/run/secrets/pg-url" },
+    });
+    expect(() => loadConfig(bad, files({ "/run/secrets/pg-url": "postgres://x" }))).toThrow(
+      "not both",
+    );
+  });
+
+  it("refuses a secret file that is not a PostgreSQL URL, without echoing it", () => {
+    const secret = "mysql-secret-value";
+    const bad = raw({ storage: { postgresUrlPath: "/run/secrets/pg-url" } });
+    let message = "";
+    try {
+      loadConfig(bad, files({ "/run/secrets/pg-url": secret }));
+    } catch (err) {
+      message = err instanceof Error ? err.message : "";
+    }
+    expect(message).toContain("postgres://");
+    expect(message).not.toContain(secret);
+  });
+});
+
 describe("server configuration (fail closed)", () => {
   it("loads a complete configuration with defaults", () => {
     const c = loadConfig(raw(), files());

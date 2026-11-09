@@ -3,6 +3,8 @@ export {
   type AuthorizationOutcome,
   type AuthorizationResult,
   type DipClientConfig,
+  type EventSink,
+  type JournalRecord,
   type RecordInput,
   type Signer,
 } from "./client.js";

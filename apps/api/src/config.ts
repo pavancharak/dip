@@ -28,6 +28,8 @@ export interface ServerConfig {
   readonly principals: ReadonlyMap<string, Principal>;
   /** Directory for the durable database, or null to run in memory only. */
   readonly dataDir: string | null;
+  /** PostgreSQL connection string, read from a secret file. Null when not used. */
+  readonly postgresUrl: string | null;
 }
 
 type Obj = Record<string, unknown>;
@@ -131,8 +133,25 @@ export function loadConfig(raw: unknown, readFile: (path: string) => string): Se
   const rate =
     c.rateLimit === undefined ? { max: 600, windowMs: 60_000 } : obj(c.rateLimit, "rateLimit");
   const storage = c.storage === undefined ? null : obj(c.storage, "storage");
+  const s = storage ?? {};
+  if (s.dataDir !== undefined && s.postgresUrlPath !== undefined) {
+    throw new ConfigError("INVALID_CONFIG", "storage: set dataDir or postgresUrlPath, not both");
+  }
+  let postgresUrl: string | null = null;
+  if (s.postgresUrlPath !== undefined) {
+    const url = readFile(text(s.postgresUrlPath, "storage.postgresUrlPath")).trim();
+    // The message names the setting only. It never echoes the connection string.
+    if (!/^postgres(ql)?:\/\//.test(url)) {
+      throw new ConfigError(
+        "INVALID_CONFIG",
+        "storage.postgresUrlPath must contain a postgres:// connection string",
+      );
+    }
+    postgresUrl = url;
+  }
   return {
-    dataDir: storage === null ? null : text(storage.dataDir, "storage.dataDir"),
+    dataDir: s.dataDir === undefined ? null : text(s.dataDir, "storage.dataDir"),
+    postgresUrl,
     port: c.port === undefined ? 3000 : int(c.port, "port", 1, 65535),
     maxDecisionAgeSeconds:
       c.maxDecisionAgeSeconds === undefined
