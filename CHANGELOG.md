@@ -25,6 +25,9 @@
 
 - `@dip/verifier`: independent evidence verifier and `dip-verify` CLI. Depends only on `@dip/crypto`. Returns VALID, INVALID, INCOMPLETE or UNVERIFIABLE with per-check detail.
 
+- `@dip/sdk`: developer client with strict ALLOW/DENY authorization, separate approval methods, evidence recording and verification.
+- `@dip/api`: versioned REST API (handler and node:http adapter) with API-key auth, scopes, tenant checks, rate limiting and typed errors.
+
 ### Notes
 
 - No approval workflow, execution boundary, evidence, ledger, verifier, SDK, CLI, API or connectors yet.

@@ -11,5 +11,15 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@dip/approval": "workspace:*",
+    "@dip/authority": "workspace:*",
+    "@dip/authorization": "workspace:*",
+    "@dip/crypto": "workspace:*",
+    "@dip/evidence": "workspace:*",
+    "@dip/execution": "workspace:*",
+    "@dip/ledger": "workspace:*",
+    "@dip/verifier": "workspace:*"
   }
 }

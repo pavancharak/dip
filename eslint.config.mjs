@@ -5,7 +5,7 @@ export default tseslint.config(
   { ignores: ["**/dist/**", "**/coverage/**", "node_modules/**"] },
   js.configs.recommended,
   {
-    files: ["packages/**/*.ts"],
+    files: ["packages/**/*.ts", "apps/**/*.ts"],
     extends: [...tseslint.configs.strictTypeChecked],
     languageOptions: {
       parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname },
