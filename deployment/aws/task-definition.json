@@ -1,0 +1,37 @@
+{
+  "family": "dip-api",
+  "requiresCompatibilities": ["FARGATE"],
+  "networkMode": "awsvpc",
+  "cpu": "512",
+  "memory": "1024",
+  "runtimePlatform": { "cpuArchitecture": "X86_64", "operatingSystemFamily": "LINUX" },
+  "taskRoleArn": "arn:aws:iam::<ACCOUNT_ID>:role/dip-api-signer-prod",
+  "executionRoleArn": "<EXECUTION_ROLE_ARN>",
+  "containerDefinitions": [
+    {
+      "name": "dip-api",
+      "image": "<IMAGE_URI>",
+      "essential": true,
+      "user": "node",
+      "readonlyRootFilesystem": true,
+      "portMappings": [{ "containerPort": 3000, "protocol": "tcp" }],
+      "environment": [
+        { "name": "NODE_ENV", "value": "production" },
+        { "name": "PORT", "value": "3000" }
+      ],
+      "secrets": [
+        { "name": "DIP_CONFIG_JSON", "valueFrom": "<CONFIG_SECRET_ARN>" },
+        { "name": "DIP_PG_URL", "valueFrom": "<PG_URL_SECRET_ARN>" },
+        { "name": "DIP_OPERATOR_KEY", "valueFrom": "<OPERATOR_KEY_SECRET_ARN>" }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/dip-api",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "dip"
+        }
+      }
+    }
+  ]
+}
