@@ -51,3 +51,7 @@ By contributing, you agree that your contribution is licensed under the project'
 ## Conduct
 
 Be respectful and constructive. Keep discussion on the work, not on the people. A separate code of conduct is not yet adopted; maintainers will decide on one before the project accepts external contributions at scale.
+
+## Code of conduct
+
+Participation is governed by the [Code of Conduct](CODE_OF_CONDUCT.md).
