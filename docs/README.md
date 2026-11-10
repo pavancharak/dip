@@ -21,7 +21,7 @@
 - [Connectors](CONNECTORS.md): writing and reviewing a connector.
 - [Troubleshooting](TROUBLESHOOTING.md): errors and what to do.
 - [Deployment](deployment/README.md): keys, configuration, running, operations.
-- [Database operations](../infrastructure/postgres/README.md)
+- [Database operations](https://github.com/pavancharak/dip/blob/main/infrastructure/postgres/README.md)
 
 ## Security and governance
 
@@ -29,10 +29,10 @@
 - [Release audit](RELEASE-AUDIT.md): the state of the project, and the gaps before any release.
 - [Retention policy (draft)](RETENTION.md)
 - [Architecture decisions](ARCHITECTURE_DECISIONS.md)
-- [Security policy](../SECURITY.md)
+- [Security policy](https://github.com/pavancharak/dip/blob/main/SECURITY.md)
 
 ## Project
 
-- [Contributing](../CONTRIBUTING.md)
-- [Changelog](../CHANGELOG.md)
+- [Contributing](https://github.com/pavancharak/dip/blob/main/CONTRIBUTING.md)
+- [Changelog](https://github.com/pavancharak/dip/blob/main/CHANGELOG.md)
 - [Build status](BUILD_STATUS.md) and [implementation matrix](IMPLEMENTATION_MATRIX.md)

@@ -2,7 +2,7 @@
 
 Package: `@dip/sdk`. The client wraps the protocol packages. It is the recommended entry point for applications.
 
-The complete example is [examples/sdk-quickstart.mjs](../examples/sdk-quickstart.mjs).
+The complete example is [examples/sdk-quickstart.mjs](https://github.com/pavancharak/dip/blob/main/examples/sdk-quickstart.mjs).
 
 ## Create a client
 
@@ -114,4 +114,4 @@ try {
 
 ## Stability
 
-The SDK follows the protocol version (`1.0`). Breaking changes require a new protocol version and an entry in [CHANGELOG.md](../CHANGELOG.md).
+The SDK follows the protocol version (`1.0`). Breaking changes require a new protocol version and an entry in [CHANGELOG.md](https://github.com/pavancharak/dip/blob/main/CHANGELOG.md).

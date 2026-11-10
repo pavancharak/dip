@@ -15,7 +15,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run --passWithNoTests",
-    "check": "pnpm -r run build && pnpm -r run typecheck && pnpm lint && pnpm format:check && pnpm test"
+    "check": "pnpm -r run build && pnpm -r run typecheck && pnpm lint && pnpm format:check && pnpm test",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs"
   },
   "devDependencies": {
     "@eslint/js": "9.17.0",
@@ -24,6 +26,7 @@
     "prettier": "3.4.2",
     "typescript": "5.7.2",
     "typescript-eslint": "8.19.0",
+    "vitepress": "^1.6.4",
     "vitest": "2.1.8"
   }
 }

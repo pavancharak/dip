@@ -56,4 +56,4 @@ The image runs as a non-root user with a read-only root filesystem. Mount your `
 
 ## Database
 
-File-backed PostgreSQL (PGlite) needs no separate server. For a networked PostgreSQL 14+ server, the storage package provides a node-postgres adapter (`openPostgres`). Its tests run in CI against PostgreSQL 16. See [infrastructure/postgres/README.md](../infrastructure/postgres/README.md).
+File-backed PostgreSQL (PGlite) needs no separate server. For a networked PostgreSQL 14+ server, the storage package provides a node-postgres adapter (`openPostgres`). Its tests run in CI against PostgreSQL 16. See [infrastructure/postgres/README.md](https://github.com/pavancharak/dip/blob/main/infrastructure/postgres/README.md).
