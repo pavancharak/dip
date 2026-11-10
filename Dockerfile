@@ -10,17 +10,15 @@ WORKDIR /app
 COPY . .
 RUN pnpm install --frozen-lockfile \
  && pnpm -r run build \
- && pnpm prune --prod
+ && pnpm --config.inject-workspace-packages=true --filter @dip/api deploy --prod /out
 
 FROM node:22-bookworm-slim AS runtime
 ENV NODE_ENV=production \
     DIP_CONFIG=/run/secrets/dip-config.json \
     PORT=3000
 WORKDIR /app
-COPY --from=build --chown=node:node /app/package.json ./package.json
-COPY --from=build --chown=node:node /app/node_modules ./node_modules
-COPY --from=build --chown=node:node /app/packages ./packages
-COPY --from=build --chown=node:node /app/apps ./apps
+# Self-contained API: its built files, production dependencies and internal packages.
+COPY --from=build --chown=node:node /out ./
 RUN mkdir -p /var/lib/dip && chown node:node /var/lib/dip
 VOLUME ["/var/lib/dip"]
 USER node
@@ -30,4 +28,4 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 # Writes ECS-injected secrets to memory-backed files, then runs the command.
 COPY --chown=node:node deployment/aws/entrypoint.sh /usr/local/bin/dip-entrypoint.sh
 ENTRYPOINT ["sh", "/usr/local/bin/dip-entrypoint.sh"]
-CMD ["node", "apps/api/dist/server.js"]
+CMD ["node", "dist/server.js"]
