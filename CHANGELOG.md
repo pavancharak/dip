@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+## 1.0.0 - 2026-11-10
+
+First stable release of the DIP reference implementation (protocol version 1.0). Tag `v1.0.0` on commit `893682e`.
+
+### Added
+
+- Protocol: authority declarations, two-outcome authorization (ALLOW | DENY), protected execution boundary, approvals as a separate workflow, signed hash-chained evidence, independent verifier.
+- SDK, REST API (OpenAPI in `docs/api/openapi.json`), `dip` CLI, conformance fixtures.
+- PostgreSQL storage with append-only triggers, a shared rate limiter, and fail-stop on persistence failure.
+- AWS KMS signing provider, with a startup check that pinned trust roots match the KMS keys.
+- Container image, ECS deployment template, and AWS deployment guide.
+- How-to guides, public documentation site, code of conduct, issue and pull request templates, Dependabot.
+
+### Known limits
+
+- Reference implementation. No external security review has been performed.
+- Connectors use placeholder endpoints. No live integration has been verified.
+- The API server runs as a single writer on purpose (ADR-0022).
+- The AWS deployment has no load balancer yet.
+
 ### Added
 
 - `@dip/crypto`: canonical JSON encoder, SHA-256, domain-separated Ed25519 signatures, JWK key import/export.
