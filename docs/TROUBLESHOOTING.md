@@ -80,4 +80,4 @@ Use the per-check detail from `dip verify --json`. See [VERIFICATION.md](VERIFIC
 
 ## Still stuck
 
-Open an issue with the code, the reason, the command you ran, and the version (`CHANGELOG.md`). Do not include private keys, API keys, or personal data. For security problems, follow [SECURITY.md](../SECURITY.md).
+Open an issue with the code, the reason, the command you ran, and the version (`CHANGELOG.md`). Do not include private keys, API keys, or personal data. For security problems, follow [SECURITY.md](https://github.com/pavancharak/dip/blob/main/SECURITY.md).

@@ -28,7 +28,7 @@ Four scenarios run and should print `4/4 examples passed`:
 node examples/sdk-quickstart.mjs
 ```
 
-Read [examples/sdk-quickstart.mjs](../examples/sdk-quickstart.mjs). It declares an authority, authorizes a request, executes it through the boundary, records evidence, and verifies the ledger. [SDK guide](SDK.md) explains each step.
+Read [examples/sdk-quickstart.mjs](https://github.com/pavancharak/dip/blob/main/examples/sdk-quickstart.mjs). It declares an authority, authorizes a request, executes it through the boundary, records evidence, and verifies the ledger. [SDK guide](SDK.md) explains each step.
 
 ## 4. Run the conformance suite
 

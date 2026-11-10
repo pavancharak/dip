@@ -17,9 +17,6 @@ export default defineConfig({
     "spec/README.md": "spec/index.md",
   },
   lastUpdated: true,
-  // Some pages link to files at the repository root (examples, CONTRIBUTING, CHANGELOG).
-  // Those files are not part of the site, so their links are excluded from the dead-link check.
-  ignoreDeadLinks: [/\.\.\//],
   themeConfig: {
     nav: [
       { text: "How to use", link: "/how-to/" },
