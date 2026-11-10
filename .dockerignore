@@ -7,6 +7,7 @@ conformance
 examples
 docs
 **/*.pem
+!deployment/aws/rds-global-bundle.pem
 **/*.key
 **/*.public.json
 .env
